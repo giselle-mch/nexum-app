@@ -14,4 +14,16 @@ app.get('/health', (req, res) => {
   })
 })
 
+const pool = require('./config/database')
+
+app.get('/db-test', async (req, res) => {
+
+  const result = await pool.query('SELECT NOW()')
+
+  res.json({
+    database_time: result.rows[0]
+  })
+
+})
+
 module.exports = app
