@@ -48,7 +48,45 @@ const Property = {
 
     return result.rows[0]
 
-  }
+  },
+
+  async search(filters) {
+
+    let query = 'SELECT * FROM inmuebles WHERE 1=1'
+    const values = []
+    let index = 1
+
+    if (filters.ciudad) {
+        query += ` AND ciudad ILIKE $${index}`
+        values.push(`%${filters.ciudad}%`)
+        index++
+    }
+
+    if (filters.tipo) {
+        query += ` AND tipo = $${index}`
+        values.push(filters.tipo)
+        index++
+    }
+
+    if (filters.precio_min) {
+        query += ` AND precio >= $${index}`
+        values.push(filters.precio_min)
+        index++
+    }
+
+    if (filters.precio_max) {
+        query += ` AND precio <= $${index}`
+        values.push(filters.precio_max)
+        index++
+    }
+
+    query += ' ORDER BY creado_en DESC'
+
+    const result = await pool.query(query, values)
+
+    return result.rows
+    
+    }
 
 }
 

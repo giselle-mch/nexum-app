@@ -60,8 +60,34 @@ const getPropertyById = async (req, res) => {
 
 }
 
+const searchProperties = async (req, res) => {
+
+  try {
+
+    const filters = {
+      ciudad: req.query.ciudad,
+      tipo: req.query.tipo,
+      precio_min: req.query.precio_min,
+      precio_max: req.query.precio_max
+    }
+
+    const properties = await Property.search(filters)
+
+    res.json(properties)
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: "Error buscando inmuebles"
+    })
+
+  }
+
+}
+
 module.exports = {
   createProperty,
   getProperties,
-  getPropertyById
+  getPropertyById,
+  searchProperties
 }

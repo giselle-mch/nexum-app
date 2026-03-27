@@ -8,6 +8,8 @@ router.post('/', verifyToken, propertyController.createProperty)
 
 router.get('/', propertyController.getProperties)
 
+router.get('/search', propertyController.searchProperties)
+
 router.get('/:id', propertyController.getPropertyById)
 
 module.exports = router
