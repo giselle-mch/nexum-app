@@ -18,6 +18,8 @@ router.get('/nearby', propertyController.getNearbyProperties)
 
 router.get('/search', propertyController.searchProperties)
 
+router.get('/detail/:id', propertyController.getPropertyDetail)
+
 router.get(
  '/mine',
  verifyToken,

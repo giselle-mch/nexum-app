@@ -36,9 +36,9 @@ const Property = {
       SELECT 
         p.*,
         COALESCE(
-          json_agg(pi.image_url) 
+          json_agg(DISTINCT pi.image_url) 
           FILTER (WHERE pi.image_url IS NOT NULL),
-          '[]'
+          '[]'::json
         ) AS imagenes
       FROM inmuebles p
       LEFT JOIN property_images pi
@@ -58,9 +58,9 @@ const Property = {
       SELECT 
         p.*,
         COALESCE(
-          json_agg(pi.image_url) 
+          json_agg(DISTINCT pi.image_url) 
           FILTER (WHERE pi.image_url IS NOT NULL),
-          '[]'
+          '[]'::json
         ) AS imagenes
       FROM inmuebles p
       LEFT JOIN property_images pi
@@ -80,9 +80,9 @@ const Property = {
       SELECT 
         p.*,
         COALESCE(
-          json_agg(pi.image_url) 
+          json_agg(DISTINCT pi.image_url) 
           FILTER (WHERE pi.image_url IS NOT NULL),
-          '[]'
+          '[]'::json
         ) AS imagenes,
         (
           6371 * acos(
@@ -110,35 +110,47 @@ const Property = {
 
   async search(filters) {
 
-    let query = 'SELECT * FROM inmuebles WHERE 1=1'
+    let query = `
+      SELECT 
+        p.*,
+        COALESCE(
+          json_agg(DISTINCT pi.image_url) 
+          FILTER (WHERE pi.image_url IS NOT NULL),
+          '[]'::json
+        ) AS imagenes
+      FROM inmuebles p
+      LEFT JOIN property_images pi
+      ON p.id = pi.property_id
+      WHERE 1=1
+    `
     const values = []
     let index = 1
 
     if (filters.ciudad) {
-        query += ` AND ciudad ILIKE $${index}`
+        query += ` AND p.ciudad ILIKE $${index}`
         values.push(`%${filters.ciudad}%`)
         index++
     }
 
     if (filters.tipo) {
-        query += ` AND tipo = $${index}`
+        query += ` AND p.tipo = $${index}`
         values.push(filters.tipo)
         index++
     }
 
     if (filters.precio_min) {
-        query += ` AND precio >= $${index}`
+        query += ` AND p.precio >= $${index}`
         values.push(filters.precio_min)
         index++
     }
 
     if (filters.precio_max) {
-        query += ` AND precio <= $${index}`
+        query += ` AND p.precio <= $${index}`
         values.push(filters.precio_max)
         index++
     }
 
-    query += ' ORDER BY creado_en DESC'
+    query += ' GROUP BY p.id ORDER BY p.creado_en DESC'
 
     const result = await pool.query(query, values)
 
@@ -148,10 +160,19 @@ const Property = {
   async getPropertiesByUser(userId) {
 
     const query = `
-      SELECT *
-      FROM inmuebles
-      WHERE propietario_id = $1
-      ORDER BY creado_en DESC
+      SELECT 
+        p.*,
+        COALESCE(
+          json_agg(DISTINCT pi.image_url) 
+          FILTER (WHERE pi.image_url IS NOT NULL),
+          '[]'::json
+        ) AS imagenes
+      FROM inmuebles p
+      LEFT JOIN property_images pi
+      ON p.id = pi.property_id
+      WHERE p.propietario_id = $1
+      GROUP BY p.id
+      ORDER BY p.creado_en DESC
     `
 
     const result = await pool.query(query, [userId])

@@ -1,5 +1,69 @@
 const Property = require('../models/propertyModel')
 
+const normalizeImages = (imagenes) => {
+  if (Array.isArray(imagenes)) {
+    return imagenes.filter(Boolean)
+  }
+
+  if (typeof imagenes === 'string') {
+    try {
+      const parsed = JSON.parse(imagenes)
+      if (Array.isArray(parsed)) {
+        return parsed.filter(Boolean)
+      }
+    } catch (error) {
+      return []
+    }
+  }
+
+  return []
+}
+
+const toMobileListItem = (property) => {
+  const images = normalizeImages(property.imagenes)
+
+  return {
+    id: property.id,
+    title: property.titulo,
+    price: property.precio !== null ? Number(property.precio) : null,
+    type: property.tipo,
+    city: property.ciudad,
+    thumbnail: images[0] || null,
+    imagesCount: images.length,
+    location: {
+      lat: property.latitud !== null ? Number(property.latitud) : null,
+      lng: property.longitud !== null ? Number(property.longitud) : null
+    },
+    distanceKm: property.distancia_km !== undefined && property.distancia_km !== null
+      ? Number(property.distancia_km)
+      : undefined
+  }
+}
+
+const toMobileDetail = (property) => {
+  const images = normalizeImages(property.imagenes)
+
+  return {
+    id: property.id,
+    title: property.titulo,
+    description: property.descripcion,
+    price: property.precio !== null ? Number(property.precio) : null,
+    type: property.tipo,
+    phone: property.telefono_contacto,
+    images,
+    location: {
+      address: property.direccion,
+      city: property.ciudad,
+      lat: property.latitud !== null ? Number(property.latitud) : null,
+      lng: property.longitud !== null ? Number(property.longitud) : null
+    },
+    createdAt: property.creado_en,
+    distanceKm: property.distancia_km !== undefined && property.distancia_km !== null
+      ? Number(property.distancia_km)
+      : undefined
+  }
+}
+
 const createProperty = async (req, res) => {
 
   try {
@@ -10,8 +74,9 @@ const createProperty = async (req, res) => {
     }
 
     const property = await Property.create(propertyData)
+    const fullProperty = await Property.findById(property.id)
 
-    res.status(201).json(property)
+    res.status(201).json(toMobileDetail(fullProperty))
 
   } catch (error) {
 
@@ -31,7 +96,7 @@ const getProperties = async (req, res) => {
 
     const properties = await Property.findAll()
 
-    res.json(properties)
+    res.json(properties.map(toMobileListItem))
 
   } catch (error) {
 
@@ -52,7 +117,11 @@ const getPropertyById = async (req, res) => {
 
     const property = await Property.findById(req.params.id)
 
-    res.json(property)
+    if (!property) {
+      return res.status(404).json({ message: "Propiedad no encontrada" })
+    }
+
+    res.json(toMobileDetail(property))
 
   } catch (error) {
 
@@ -65,6 +134,10 @@ const getPropertyById = async (req, res) => {
 
   }
 
+}
+
+const getPropertyDetail = async (req, res) => {
+  return getPropertyById(req, res)
 }
 
 const searchProperties = async (req, res) => {
@@ -80,7 +153,7 @@ const searchProperties = async (req, res) => {
 
     const properties = await Property.search(filters)
 
-    res.json(properties)
+    res.json(properties.map(toMobileListItem))
 
   } catch (error) {
 
@@ -111,7 +184,7 @@ const getNearbyProperties = async (req, res) => {
 
     const properties = await Property.findNearby({ lat, lng, radius })
 
-    res.json(properties)
+    res.json(properties.map(toMobileListItem))
 
   } catch (error) {
 
@@ -131,9 +204,9 @@ const getMyProperties = async (req, res) => {
 
   const userId = req.user.id;
 
-  const properties = await Property.getPropertiesByUser(userId);
+ const properties = await Property.getPropertiesByUser(userId);
 
-  res.json(properties);
+  res.json(properties.map(toMobileListItem));
 
  } catch (error) {
 
@@ -162,7 +235,9 @@ const updateMyProperty = async (req, res) => {
       return res.status(404).json({ message: 'Propiedad no encontrada o sin cambios' })
     }
 
-    res.json(updated)
+    const fullProperty = await Property.findById(propertyId)
+
+    res.json(toMobileDetail(fullProperty))
 
   } catch (error) {
 
@@ -193,7 +268,7 @@ const deleteMyProperty = async (req, res) => {
       return res.status(404).json({ message: 'Propiedad no encontrada' })
     }
 
-    res.json({ message: 'Propiedad eliminada', property: deleted })
+    res.json({ message: 'Propiedad eliminada', propertyId: deleted.id })
 
   } catch (error) {
 
@@ -211,6 +286,7 @@ module.exports = {
   createProperty,
   getProperties,
   getPropertyById,
+  getPropertyDetail,
   searchProperties,
   getNearbyProperties,
   getMyProperties,
