@@ -19,6 +19,12 @@ const normalizeImages = (imagenes) => {
   return []
 }
 
+const parseOptionalNumber = (value) => {
+  if (value === undefined) return undefined
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
 const toMobileListItem = (property) => {
   const images = normalizeImages(property.imagenes)
 
@@ -37,6 +43,17 @@ const toMobileListItem = (property) => {
     distanceKm: property.distancia_km !== undefined && property.distancia_km !== null
       ? Number(property.distancia_km)
       : undefined
+  }
+}
+
+const toMapMarker = (property) => {
+  return {
+    id: property.id,
+    titulo: property.titulo,
+    precio: property.precio !== null ? Number(property.precio) : null,
+    latitud: property.latitud !== null ? Number(property.latitud) : null,
+    longitud: property.longitud !== null ? Number(property.longitud) : null,
+    imagen_principal: property.imagen_principal || null
   }
 }
 
@@ -138,6 +155,44 @@ const getPropertyById = async (req, res) => {
 
 const getPropertyDetail = async (req, res) => {
   return getPropertyById(req, res)
+}
+
+const getMapProperties = async (req, res) => {
+
+  try {
+
+    const minLat = parseOptionalNumber(req.query.minLat)
+    const maxLat = parseOptionalNumber(req.query.maxLat)
+    const minLng = parseOptionalNumber(req.query.minLng)
+    const maxLng = parseOptionalNumber(req.query.maxLng)
+    const limit = parseOptionalNumber(req.query.limit)
+
+    if ([minLat, maxLat, minLng, maxLng, limit].includes(null)) {
+      return res.status(400).json({
+        message: "Parámetros inválidos. Usa minLat, maxLat, minLng, maxLng y limit numéricos"
+      })
+    }
+
+    const properties = await Property.findForMap({
+      minLat,
+      maxLat,
+      minLng,
+      maxLng,
+      limit
+    })
+
+    res.json(properties.map(toMapMarker))
+
+  } catch (error) {
+
+    console.error("Error en getMapProperties:", error)
+
+    res.status(500).json({
+      message: "Error obteniendo propiedades para mapa",
+      error: error.message
+    })
+
+  }
 }
 
 const searchProperties = async (req, res) => {
@@ -287,6 +342,7 @@ module.exports = {
   getProperties,
   getPropertyById,
   getPropertyDetail,
+  getMapProperties,
   searchProperties,
   getNearbyProperties,
   getMyProperties,

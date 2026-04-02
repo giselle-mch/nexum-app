@@ -108,6 +108,67 @@ const Property = {
     return result.rows
   },
 
+  async findForMap({ minLat, maxLat, minLng, maxLng, limit }) {
+
+    let query = `
+      SELECT
+        p.id,
+        p.titulo,
+        p.precio,
+        p.latitud,
+        p.longitud,
+        (
+          SELECT pi.image_url
+          FROM property_images pi
+          WHERE pi.property_id = p.id
+          ORDER BY pi.id ASC
+          LIMIT 1
+        ) AS imagen_principal
+      FROM inmuebles p
+      WHERE p.latitud IS NOT NULL
+        AND p.longitud IS NOT NULL
+    `
+
+    const values = []
+    let index = 1
+
+    if (minLat !== undefined) {
+      query += ` AND p.latitud >= $${index}`
+      values.push(minLat)
+      index++
+    }
+
+    if (maxLat !== undefined) {
+      query += ` AND p.latitud <= $${index}`
+      values.push(maxLat)
+      index++
+    }
+
+    if (minLng !== undefined) {
+      query += ` AND p.longitud >= $${index}`
+      values.push(minLng)
+      index++
+    }
+
+    if (maxLng !== undefined) {
+      query += ` AND p.longitud <= $${index}`
+      values.push(maxLng)
+      index++
+    }
+
+    query += ' ORDER BY p.creado_en DESC'
+
+    if (limit !== undefined) {
+      query += ` LIMIT $${index}`
+      values.push(limit)
+      index++
+    }
+
+    const result = await pool.query(query, values)
+
+    return result.rows
+  },
+
   async search(filters) {
 
     let query = `

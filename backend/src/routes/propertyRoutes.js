@@ -16,6 +16,8 @@ router.get('/', propertyController.getProperties)
 
 router.get('/nearby', propertyController.getNearbyProperties)
 
+router.get('/map', propertyController.getMapProperties)
+
 router.get('/search', propertyController.searchProperties)
 
 router.get('/detail/:id', propertyController.getPropertyDetail)
