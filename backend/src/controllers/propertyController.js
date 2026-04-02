@@ -74,6 +74,10 @@ const toMobileDetail = (property) => {
       lat: property.latitud !== null ? Number(property.latitud) : null,
       lng: property.longitud !== null ? Number(property.longitud) : null
     },
+    owner: {
+      id: property.arrendador_id ?? property.propietario_id,
+      name: property.arrendador_nombre || null
+    },
     createdAt: property.creado_en,
     distanceKm: property.distancia_km !== undefined && property.distancia_km !== null
       ? Number(property.distancia_km)

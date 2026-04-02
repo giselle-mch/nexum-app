@@ -57,16 +57,20 @@ const Property = {
     const query = `
       SELECT 
         p.*,
+        u.id AS arrendador_id,
+        u.nombre AS arrendador_nombre,
         COALESCE(
           json_agg(DISTINCT pi.image_url) 
           FILTER (WHERE pi.image_url IS NOT NULL),
           '[]'::json
         ) AS imagenes
       FROM inmuebles p
+      LEFT JOIN usuarios u
+      ON p.propietario_id = u.id
       LEFT JOIN property_images pi
       ON p.id = pi.property_id
       WHERE p.id = $1
-      GROUP BY p.id
+      GROUP BY p.id, u.id, u.nombre
     `
 
     const result = await pool.query(query, [id])
