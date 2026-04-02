@@ -31,23 +31,46 @@ const Property = {
 
   async findAll() {
 
-    const result = await pool.query(
-      'SELECT * FROM inmuebles ORDER BY creado_en DESC'
-    )
+    const query = `
+      SELECT 
+        p.*,
+        COALESCE(
+          json_agg(pi.image_url) 
+          FILTER (WHERE pi.image_url IS NOT NULL),
+          '[]'
+        ) AS imagenes
+      FROM inmuebles p
+      LEFT JOIN property_images pi
+      ON p.id = pi.property_id
+      GROUP BY p.id
+      ORDER BY p.creado_en DESC
+    `
+
+    const result = await pool.query(query)
 
     return result.rows
-
   },
 
   async findById(id) {
 
-    const result = await pool.query(
-      'SELECT * FROM inmuebles WHERE id = $1',
-      [id]
-    )
+    const query = `
+      SELECT 
+        p.*,
+        COALESCE(
+          json_agg(pi.image_url) 
+          FILTER (WHERE pi.image_url IS NOT NULL),
+          '[]'
+        ) AS imagenes
+      FROM inmuebles p
+      LEFT JOIN property_images pi
+      ON p.id = pi.property_id
+      WHERE p.id = $1
+      GROUP BY p.id
+    `
+
+    const result = await pool.query(query, [id])
 
     return result.rows[0]
-
   },
 
   async search(filters) {
