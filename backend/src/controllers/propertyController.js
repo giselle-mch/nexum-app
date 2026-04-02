@@ -15,6 +15,7 @@ const createProperty = async (req, res) => {
 
   } catch (error) {
 
+    console.error("Error en createProperty:", error)
     res.status(500).json({
       message: "Error creando inmueble",
       error

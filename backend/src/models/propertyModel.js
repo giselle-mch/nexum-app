@@ -6,8 +6,8 @@ const Property = {
 
     const query = `
       INSERT INTO inmuebles
-      (titulo, descripcion, precio, tipo, direccion, ciudad, latitud, longitud, propietario_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      (titulo, descripcion, precio, tipo, direccion, ciudad, latitud, longitud, telefono_contacto, propietario_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
       RETURNING *
     `
 
@@ -20,6 +20,7 @@ const Property = {
       property.ciudad,
       property.latitud,
       property.longitud,
+      property.telefono_contacto,
       property.propietario_id
     ]
 
