@@ -143,8 +143,81 @@ const Property = {
     const result = await pool.query(query, values)
 
     return result.rows
-    
+  },
+
+  async getPropertiesByUser(userId) {
+
+    const query = `
+      SELECT *
+      FROM inmuebles
+      WHERE propietario_id = $1
+      ORDER BY creado_en DESC
+    `
+
+    const result = await pool.query(query, [userId])
+
+    return result.rows
+
+  },
+
+  async updateByIdAndOwner(propertyId, ownerId, updates) {
+
+    const allowedFields = [
+      'titulo',
+      'descripcion',
+      'precio',
+      'tipo',
+      'direccion',
+      'ciudad',
+      'latitud',
+      'longitud',
+      'telefono_contacto'
+    ]
+
+    const setClauses = []
+    const values = []
+    let index = 1
+
+    for (const field of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(updates, field)) {
+        setClauses.push(`${field} = $${index}`)
+        values.push(updates[field])
+        index++
+      }
     }
+
+    if (setClauses.length === 0) {
+      return null
+    }
+
+    values.push(propertyId, ownerId)
+
+    const query = `
+      UPDATE inmuebles
+      SET ${setClauses.join(', ')}
+      WHERE id = $${index} AND propietario_id = $${index + 1}
+      RETURNING *
+    `
+
+    const result = await pool.query(query, values)
+
+    return result.rows[0] || null
+
+  },
+
+  async deleteByIdAndOwner(propertyId, ownerId) {
+
+    const query = `
+      DELETE FROM inmuebles
+      WHERE id = $1 AND propietario_id = $2
+      RETURNING *
+    `
+
+    const result = await pool.query(query, [propertyId, ownerId])
+
+    return result.rows[0] || null
+
+  }
 
 }
 

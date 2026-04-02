@@ -125,10 +125,95 @@ const getNearbyProperties = async (req, res) => {
   }
 }
 
+const getMyProperties = async (req, res) => {
+
+ try {
+
+  const userId = req.user.id;
+
+  const properties = await Property.getPropertiesByUser(userId);
+
+  res.json(properties);
+
+ } catch (error) {
+
+  res.status(500).json({
+   error: "Error obteniendo propiedades del usuario"
+  });
+
+ }
+
+};
+
+const updateMyProperty = async (req, res) => {
+
+  try {
+
+    const propertyId = Number(req.params.id)
+    if (Number.isNaN(propertyId)) {
+      return res.status(400).json({ message: 'ID inválido' })
+    }
+
+    const ownerId = req.user.id
+
+    const updated = await Property.updateByIdAndOwner(propertyId, ownerId, req.body)
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Propiedad no encontrada o sin cambios' })
+    }
+
+    res.json(updated)
+
+  } catch (error) {
+
+    console.error("Error en updateMyProperty:", error)
+    res.status(500).json({
+      message: "Error actualizando inmueble",
+      error: error.message
+    })
+
+  }
+
+}
+
+const deleteMyProperty = async (req, res) => {
+
+  try {
+
+    const propertyId = Number(req.params.id)
+    if (Number.isNaN(propertyId)) {
+      return res.status(400).json({ message: 'ID inválido' })
+    }
+
+    const ownerId = req.user.id
+
+    const deleted = await Property.deleteByIdAndOwner(propertyId, ownerId)
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Propiedad no encontrada' })
+    }
+
+    res.json({ message: 'Propiedad eliminada', property: deleted })
+
+  } catch (error) {
+
+    console.error("Error en deleteMyProperty:", error)
+    res.status(500).json({
+      message: "Error eliminando inmueble",
+      error: error.message
+    })
+
+  }
+
+}
+
 module.exports = {
   createProperty,
   getProperties,
   getPropertyById,
   searchProperties,
-  getNearbyProperties
+  getNearbyProperties,
+  getMyProperties,
+  updateMyProperty,
+  deleteMyProperty
 }
