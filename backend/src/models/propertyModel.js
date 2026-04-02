@@ -73,6 +73,40 @@ const Property = {
     return result.rows[0]
   },
 
+  async findNearby({ lat, lng, radius }) {
+
+    const query = `
+      SELECT 
+        p.*,
+        COALESCE(
+          json_agg(pi.image_url) 
+          FILTER (WHERE pi.image_url IS NOT NULL),
+          '[]'
+        ) AS imagenes,
+        (
+          6371 * acos(
+            cos(radians($1)) * cos(radians(p.latitud)) * cos(radians(p.longitud) - radians($2)) +
+            sin(radians($1)) * sin(radians(p.latitud))
+          )
+        ) AS distancia_km
+      FROM inmuebles p
+      LEFT JOIN property_images pi
+      ON p.id = pi.property_id
+      GROUP BY p.id
+      HAVING (
+        6371 * acos(
+          cos(radians($1)) * cos(radians(p.latitud)) * cos(radians(p.longitud) - radians($2)) +
+          sin(radians($1)) * sin(radians(p.latitud))
+        )
+      ) <= $3
+      ORDER BY distancia_km ASC
+    `
+
+    const result = await pool.query(query, [lat, lng, radius])
+
+    return result.rows
+  },
+
   async search(filters) {
 
     let query = 'SELECT * FROM inmuebles WHERE 1=1'
