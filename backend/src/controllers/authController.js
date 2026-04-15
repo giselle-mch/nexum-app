@@ -2,11 +2,31 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const User = require('../models/userModel')
 
+const DB_CLIENT_ROLE = 'usuario'
+
+const normalizeIncomingRole = (role) => {
+  if (role === 'arrendador') return 'arrendador'
+  return DB_CLIENT_ROLE
+}
+
+const toPublicRole = (dbRole) => {
+  if (dbRole === DB_CLIENT_ROLE) return 'cliente'
+  return dbRole
+}
+
+const sanitizeUser = (user) => ({
+  id: user.id,
+  nombre: user.nombre,
+  email: user.email,
+  telefono: user.telefono,
+  rol: toPublicRole(user.rol)
+})
+
 const register = async (req, res) => {
 
   try {
 
-    const { nombre, email, password, telefono } = req.body
+    const { nombre, email, password, telefono, rol } = req.body
 
     const existingUser = await User.findByEmail(email)
 
@@ -23,12 +43,12 @@ const register = async (req, res) => {
       email,
       password: hashedPassword,
       telefono,
-      rol: "usuario"
+      rol: normalizeIncomingRole(rol)
     })
 
     res.status(201).json({
       message: "Usuario creado",
-      user: newUser
+      user: sanitizeUser(newUser)
     })
 
   } catch (error) {
@@ -68,7 +88,7 @@ const login = async (req, res) => {
       {
         id: user.id,
         email: user.email,
-        rol: user.rol
+        rol: toPublicRole(user.rol)
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
@@ -76,7 +96,8 @@ const login = async (req, res) => {
 
     res.json({
       message: "Login exitoso",
-      token
+      token,
+      user: sanitizeUser(user)
     })
 
   } catch (error) {
@@ -90,7 +111,46 @@ const login = async (req, res) => {
 
 }
 
+const recoverPassword = async (req, res) => {
+
+  try {
+
+    const { email, newPassword } = req.body
+
+    if (!email || !newPassword) {
+      return res.status(400).json({
+        message: "Email y nueva contraseña son requeridos"
+      })
+    }
+
+    const existingUser = await User.findByEmail(email)
+
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "Usuario no encontrado"
+      })
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+    await User.updatePasswordByEmail(email, hashedPassword)
+
+    res.json({
+      message: "Contraseña actualizada correctamente"
+    })
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: "Error recuperando contraseña",
+      error
+    })
+
+  }
+
+}
+
 module.exports = {
   register,
-  login
+  login,
+  recoverPassword
 }
