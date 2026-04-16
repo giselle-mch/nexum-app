@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/authStore";
 import { api } from "../../services/api";
 import { COLORS } from "../../constants/colors";
+import SectionHeader from "../../components/SectionHeader";
+import StatePanel from "../../components/StatePanel";
 
 type ProfilePayload = {
   id: number;
@@ -29,19 +32,27 @@ type FavoriteProperty = {
 };
 
 export default function ProfileScreen({ navigation }: any) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const { logout } = useAuthStore();
 
   const [profile, setProfile] = useState<ProfilePayload | null>(null);
   const [favorites, setFavorites] = useState<FavoriteProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     loadData();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 320,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
+      setErrorMessage("");
 
       const [profileResponse, favoritesResponse] = await Promise.all([
         api("/users/profile"),
@@ -56,10 +67,9 @@ export default function ProfileScreen({ navigation }: any) {
       setProfile(user);
       setFavorites(Array.isArray(favoritesResponse) ? (favoritesResponse as FavoriteProperty[]) : []);
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "No fue posible cargar el perfil"
-      );
+      const msg = error instanceof Error ? error.message : "No fue posible cargar el perfil";
+      setErrorMessage(msg);
+      Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
@@ -85,7 +95,7 @@ export default function ProfileScreen({ navigation }: any) {
     <View
       style={{
         backgroundColor: COLORS.white,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: 12,
         marginBottom: 10,
         borderWidth: 1,
@@ -131,59 +141,68 @@ export default function ProfileScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
-      <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
-      <View style={{ padding: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.lightGray }}>
-        <Text style={{ fontSize: 22, fontWeight: "700", color: COLORS.primary }}>Mi perfil</Text>
-        <Text style={{ marginTop: 8, color: COLORS.dark }}>Email: {profile?.email ?? "No disponible"}</Text>
-        <Text style={{ marginTop: 4, color: COLORS.dark }}>Rol: {profile?.rol ?? "No disponible"}</Text>
-      </View>
-
-      <View style={{ flexDirection: "row", gap: 10, padding: 16 }}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Map")}
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        <View
           style={{
-            flex: 1,
-            backgroundColor: COLORS.lightGray,
-            borderRadius: 10,
-            alignItems: "center",
-            padding: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            backgroundColor: COLORS.white,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.lightGray,
           }}
         >
-          <Text style={{ color: COLORS.dark, fontWeight: "600" }}>Volver al mapa</Text>
-        </TouchableOpacity>
+          <SectionHeader title="Mi Perfil" subtitle="Tu información y favoritos" icon="person-circle-outline" />
+          <Text style={{ marginTop: 10, color: COLORS.dark }}>Email: {profile?.email ?? "No disponible"}</Text>
+          <Text style={{ marginTop: 4, color: COLORS.dark }}>Rol: {profile?.rol ?? "No disponible"}</Text>
+        </View>
 
-        <TouchableOpacity
-          onPress={onLogout}
-          style={{
-            flex: 1,
-            backgroundColor: COLORS.primary,
-            borderRadius: 10,
-            alignItems: "center",
-            padding: 12,
-          }}
-        >
-          <Text style={{ color: COLORS.white, fontWeight: "600" }}>Cerrar sesión</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={{ flexDirection: "row", gap: 10, padding: 16 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Map")}
+            style={{
+              flex: 1,
+              backgroundColor: COLORS.lightGray,
+              borderRadius: 12,
+              alignItems: "center",
+              padding: 12,
+            }}
+          >
+            <Text style={{ color: COLORS.dark, fontWeight: "700" }}>Volver al mapa</Text>
+          </TouchableOpacity>
 
-      <View style={{ flex: 1, paddingHorizontal: 16 }}>
-        <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12, color: COLORS.dark }}>
-          Favoritos
-        </Text>
+          <TouchableOpacity
+            onPress={onLogout}
+            style={{
+              flex: 1,
+              backgroundColor: COLORS.primary,
+              borderRadius: 12,
+              alignItems: "center",
+              padding: 12,
+            }}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: "700" }}>Cerrar sesión</Text>
+          </TouchableOpacity>
+        </View>
 
-        <FlatList
-          data={favorites}
-          keyExtractor={(item) => item.id.toString()}
-          refreshing={loading}
-          onRefresh={loadData}
-          ListEmptyComponent={
-            <Text style={{ color: "gray" }}>Aún no tienes inmuebles favoritos.</Text>
-          }
-          renderItem={renderFavorite}
-        />
-      </View>
-      </View>
+        <View style={{ flex: 1, paddingHorizontal: 16 }}>
+          <SectionHeader title="Favoritos" subtitle="Tus inmuebles guardados" icon="heart-outline" />
+
+          {errorMessage ? <StatePanel variant="error" message={errorMessage} /> : null}
+
+          <FlatList
+            data={favorites}
+            keyExtractor={(item) => item.id.toString()}
+            refreshing={loading}
+            onRefresh={loadData}
+            contentContainerStyle={{ paddingTop: 10, paddingBottom: 14 }}
+            ListEmptyComponent={
+              <StatePanel variant="empty" message="Aún no tienes inmuebles favoritos." />
+            }
+            renderItem={renderFavorite}
+          />
+        </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }

@@ -58,7 +58,7 @@ export default function MapScreen({ navigation }: any) {
       <View
         style={{
           position: "absolute",
-          top: 48,
+          top: 56,
           right: 16,
           zIndex: 10,
           gap: 10,
@@ -68,13 +68,17 @@ export default function MapScreen({ navigation }: any) {
           onPress={() => navigation.navigate("Profile")}
           style={{
             backgroundColor: "#FFFFFF",
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            borderRadius: 10,
-            elevation: 3,
+            paddingHorizontal: 15,
+            paddingVertical: 11,
+            borderRadius: 14,
+            elevation: 5,
+            shadowColor: "#0A1526",
+            shadowOpacity: 0.14,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 4 },
           }}
         >
-          <Text style={{ color: "#0B1F33", fontWeight: "700" }}>Perfil</Text>
+          <Text style={{ color: "#0B1F33", fontWeight: "800" }}>Perfil</Text>
         </TouchableOpacity>
 
         {canManageProperties ? (
@@ -82,13 +86,17 @@ export default function MapScreen({ navigation }: any) {
             onPress={() => navigation.navigate("LandlordDashboard")}
             style={{
               backgroundColor: "#FFFFFF",
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              borderRadius: 10,
-              elevation: 3,
+              paddingHorizontal: 15,
+              paddingVertical: 11,
+              borderRadius: 14,
+              elevation: 5,
+              shadowColor: "#0A1526",
+              shadowOpacity: 0.14,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
             }}
           >
-            <Text style={{ color: "#0B1F33", fontWeight: "700" }}>Arrendador</Text>
+            <Text style={{ color: "#0B1F33", fontWeight: "800" }}>Arrendador</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -120,16 +128,18 @@ export default function MapScreen({ navigation }: any) {
         onPress={() => navigation.navigate("List")}
         style={{
           position: "absolute",
-          bottom: 40,
+          bottom: 28,
           left: 20,
           right: 20,
-          backgroundColor: "#0B1F33",
-          padding: 15,
-          borderRadius: 10,
+          backgroundColor: "#0B1F33EE",
+          padding: 16,
+          borderRadius: 14,
           alignItems: "center",
+          borderWidth: 1,
+          borderColor: "#3A5F7D",
         }}
       >
-        <Text style={{ color: "white" }}>Ver lista de propiedades</Text>
+        <Text style={{ color: "white", fontWeight: "700" }}>Ver lista de propiedades</Text>
       </TouchableOpacity>
     </View>
   );

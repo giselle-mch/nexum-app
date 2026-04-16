@@ -53,8 +53,7 @@ export default function PropertyDetailScreen({ route }: any) {
 
   if (!property) return null;
 
-  const coverImage =
-    toAssetUrl(property.images?.[0]) ?? "https://via.placeholder.com/300";
+  const coverImage = toAssetUrl(property.images?.[0]) ?? "https://via.placeholder.com/300";
 
   const onSaveFavorite = async () => {
     try {
@@ -105,7 +104,7 @@ export default function PropertyDetailScreen({ route }: any) {
     }
 
     const message = encodeURIComponent(
-      `Hola, me interesa agendar una visita para: ${property.title} (ID ${property.id}).`
+      `Hola, me interesa agendar una visita para "${property.title}" en ${property.location.city ?? "tu zona"}${property.location.address ? `, dirección: ${property.location.address}` : ""}.`
     );
     const whatsappUrl = `https://wa.me/${phone}?text=${message}`;
 
@@ -119,95 +118,119 @@ export default function PropertyDetailScreen({ route }: any) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <ScrollView style={{ flex: 1 }}>
-      <Image source={{ uri: coverImage }} style={{ width: "100%", height: 250 }} />
+        <Image source={{ uri: coverImage }} style={{ width: "100%", height: 280 }} />
 
-      {property.images?.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginTop: 8 }}
-          contentContainerStyle={{ paddingHorizontal: 8 }}
-        >
-          {property.images.slice(1).map((image, index) => (
-            <Image
-              key={`${image}-${index}`}
-              source={{ uri: toAssetUrl(image) ?? "https://via.placeholder.com/300" }}
-              style={{
-                width: 110,
-                height: 90,
-                marginRight: 8,
-                borderRadius: 8,
-              }}
-            />
-          ))}
-        </ScrollView>
-      ) : null}
-
-      <View style={{ padding: 15 }}>
-        <Text style={{ fontSize: 22, fontWeight: "bold" }}>{property.title}</Text>
-
-        <Text style={{ fontSize: 18, color: "green" }}>
-          {property.price !== null ? `$${property.price}` : "Precio a consultar"}
-        </Text>
-
-        <Text style={{ marginTop: 8, color: "gray" }}>Tipo: {property.type}</Text>
-
-        <Text style={{ marginTop: 10 }}>{property.description}</Text>
-
-        <Text style={{ marginTop: 10, color: "gray" }}>
-          {property.location.address}, {property.location.city}
-        </Text>
-
-        {property.phone ? (
-          <Text style={{ marginTop: 10 }}>Contacto: {property.phone}</Text>
+        {property.images?.length > 1 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginTop: 10 }}
+            contentContainerStyle={{ paddingHorizontal: 10, gap: 8 }}
+          >
+            {property.images.slice(1).map((image, index) => (
+              <Image
+                key={`${image}-${index}`}
+                source={{ uri: toAssetUrl(image) ?? "https://via.placeholder.com/300" }}
+                style={{ width: 116, height: 90, borderRadius: 10 }}
+              />
+            ))}
+          </ScrollView>
         ) : null}
 
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-          <TouchableOpacity
-            onPress={onContact}
-            style={{
-              flex: 1,
-              backgroundColor: COLORS.secondary,
-              padding: 14,
-              borderRadius: 10,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: COLORS.white, fontWeight: "600" }}>Contactar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={onScheduleVisit}
-            style={{
-              flex: 1,
-              backgroundColor: "#0F9D58",
-              padding: 14,
-              borderRadius: 10,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: COLORS.white, fontWeight: "600" }}>Agendar visita</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          onPress={onSaveFavorite}
-          disabled={loadingFavorite}
+        <View
           style={{
-            marginTop: 16,
-            backgroundColor: COLORS.primary,
-            padding: 14,
-            borderRadius: 10,
-            alignItems: "center",
+            margin: 12,
+            marginTop: 14,
+            backgroundColor: COLORS.white,
+            borderRadius: 18,
+            padding: 16,
+            shadowColor: "#0B1F33",
+            shadowOpacity: 0.1,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 4,
           }}
         >
-          <Text style={{ color: COLORS.white, fontWeight: "600" }}>
-            {loadingFavorite ? "Guardando..." : "Guardar en favoritos"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: COLORS.ink }}>{property.title}</Text>
+
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <View style={{ backgroundColor: "#E8EEF7", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: "700" }}>
+                {property.price !== null ? `$${property.price}` : "Precio a consultar"}
+              </Text>
+            </View>
+            <View style={{ backgroundColor: "#F4E6DD", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}>
+              <Text style={{ color: COLORS.accent, fontWeight: "700" }}>{property.type}</Text>
+            </View>
+          </View>
+
+          <Text style={{ marginTop: 14, color: COLORS.dark, lineHeight: 21 }}>{property.description}</Text>
+
+          <View
+            style={{
+              marginTop: 14,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              borderRadius: 12,
+              padding: 12,
+              backgroundColor: "#FBFCFE",
+            }}
+          >
+            <Text style={{ color: COLORS.ink, fontWeight: "700" }}>Ubicación</Text>
+            <Text style={{ marginTop: 4, color: COLORS.secondary }}>
+              {property.location.address}, {property.location.city}
+            </Text>
+            {property.phone ? (
+              <Text style={{ marginTop: 8, color: COLORS.secondary }}>Contacto: {property.phone}</Text>
+            ) : null}
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+            <TouchableOpacity
+              onPress={onContact}
+              style={{
+                flex: 1,
+                backgroundColor: COLORS.secondary,
+                padding: 14,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: COLORS.white, fontWeight: "700" }}>Contactar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onScheduleVisit}
+              style={{
+                flex: 1,
+                backgroundColor: COLORS.success,
+                padding: 14,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: COLORS.white, fontWeight: "700" }}>Agendar visita</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            onPress={onSaveFavorite}
+            disabled={loadingFavorite}
+            style={{
+              marginTop: 12,
+              backgroundColor: COLORS.primary,
+              padding: 14,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: "700" }}>
+              {loadingFavorite ? "Guardando..." : "Guardar en favoritos"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
