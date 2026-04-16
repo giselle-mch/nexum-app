@@ -34,15 +34,31 @@ export default function PropertyDetailScreen({ route }: any) {
   const { id } = route.params;
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
-    fetchProperty();
+    fetchInitialData();
   }, []);
 
-  const fetchProperty = async () => {
+  const fetchInitialData = async () => {
     try {
-      const data = await api(`/properties/${id}`);
+      const [data, favorites] = await Promise.all([
+        api(`/properties/${id}`),
+        api("/favorites"),
+      ]);
+
       setProperty(data as PropertyDetail);
+
+      const isSaved =
+        Array.isArray(favorites) &&
+        favorites.some(
+          (item) =>
+            item &&
+            typeof item === "object" &&
+            "id" in item &&
+            Number(item.id) === Number(id)
+        );
+      setIsFavorite(isSaved);
     } catch (error) {
       Alert.alert(
         "Error",
@@ -55,15 +71,25 @@ export default function PropertyDetailScreen({ route }: any) {
 
   const coverImage = toAssetUrl(property.images?.[0]) ?? "https://via.placeholder.com/300";
 
-  const onSaveFavorite = async () => {
+  const onToggleFavorite = async () => {
+    if (!property) return;
+
     try {
       setLoadingFavorite(true);
-      await api(`/favorites/${property.id}`, "POST");
-      Alert.alert("Listo", "Inmueble guardado en favoritos");
+
+      if (isFavorite) {
+        await api(`/favorites/${property.id}`, "DELETE");
+        setIsFavorite(false);
+      } else {
+        await api(`/favorites/${property.id}`, "POST");
+        setIsFavorite(true);
+      }
     } catch (error) {
       Alert.alert(
         "Error",
-        error instanceof Error ? error.message : "No fue posible guardar favorito"
+        error instanceof Error
+          ? error.message
+          : "No fue posible actualizar favoritos"
       );
     } finally {
       setLoadingFavorite(false);
@@ -216,18 +242,22 @@ export default function PropertyDetailScreen({ route }: any) {
           </View>
 
           <TouchableOpacity
-            onPress={onSaveFavorite}
+            onPress={onToggleFavorite}
             disabled={loadingFavorite}
             style={{
               marginTop: 12,
-              backgroundColor: COLORS.primary,
+              backgroundColor: isFavorite ? "#B42318" : COLORS.primary,
               padding: 14,
               borderRadius: 12,
               alignItems: "center",
             }}
           >
             <Text style={{ color: COLORS.white, fontWeight: "700" }}>
-              {loadingFavorite ? "Guardando..." : "Guardar en favoritos"}
+              {loadingFavorite
+                ? "Actualizando..."
+                : isFavorite
+                  ? "Quitar de favoritos"
+                  : "Guardar en favoritos"}
             </Text>
           </TouchableOpacity>
         </View>
