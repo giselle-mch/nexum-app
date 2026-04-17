@@ -198,8 +198,8 @@ const Property = {
     }
 
     if (filters.tipo) {
-        query += ` AND p.tipo = $${index}`
-        values.push(filters.tipo)
+        query += ` AND p.tipo ILIKE $${index}`
+        values.push(filters.tipo.trim())
         index++
     }
 
