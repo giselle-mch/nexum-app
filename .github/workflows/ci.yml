@@ -1,0 +1,56 @@
+name: NEXUM Continuous Integration
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            mobile/package-lock.json
+
+      - name: Mostrar versión de Node.js
+        run: node --version
+
+      - name: Mostrar versión de npm
+        run: npm --version
+
+      - name: Instalar dependencias del Backend
+        working-directory: backend
+        run: npm install
+
+      - name: Verificar dependencias del Backend
+        working-directory: backend
+        run: npm list --depth=0
+
+      - name: Ejecutar pruebas del Backend
+        working-directory: backend
+        run: npm test
+
+      - name: Instalar dependencias del Mobile
+        working-directory: mobile
+        run: npm install
+
+      - name: Verificar Expo
+        working-directory: mobile
+        run: npx expo --version
+
+      - name: Pipeline completado
+        run: echo "Pipeline ejecutado correctamente."
