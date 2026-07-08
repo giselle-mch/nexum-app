@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
-  "scripts": {
+ "scripts": {
   "dev": "node server.js",
   "dev:watch": "nodemon server.js",
-  "test": "jest --runInBand --forceExit"
+  "test": "jest --runInBand --forceExit",
+  "lint": "eslint src test server.js"
 },
   "keywords": [],
   "author": "",
