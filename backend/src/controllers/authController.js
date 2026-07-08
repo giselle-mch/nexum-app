@@ -152,5 +152,8 @@ const recoverPassword = async (req, res) => {
 module.exports = {
   register,
   login,
-  recoverPassword
+  recoverPassword,
+  normalizeIncomingRole,
+  toPublicRole,
+  sanitizeUser
 }
