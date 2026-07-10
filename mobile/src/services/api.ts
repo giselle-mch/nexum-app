@@ -1,7 +1,35 @@
 import { useAuthStore } from "../store/authStore";
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
+
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+
+const getHostFromUrl = (value?: string | null) => {
+  if (!value) return null;
+
+  try {
+    return new URL(value).hostname;
+  } catch (_error) {
+    const match = value.match(/^[a-z]+:\/\/([^/:?#]+)/i);
+    return match?.[1] ?? null;
+  }
+};
+
+const getExpoDevServerHost = () => {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    return window.location.hostname;
+  }
+
+  const scriptURL = NativeModules.SourceCode?.scriptURL as string | undefined;
+  return getHostFromUrl(scriptURL);
+};
 
 const getDefaultApiBaseUrl = () => {
+  const devServerHost = getExpoDevServerHost();
+
+  if (devServerHost && devServerHost !== "localhost") {
+    return `http://${devServerHost}:3000`;
+  }
+
   if (Platform.OS === "android") {
     return "http://10.0.2.2:3000";
   }
@@ -10,8 +38,7 @@ const getDefaultApiBaseUrl = () => {
 };
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ??
-  getDefaultApiBaseUrl();
+  trimTrailingSlash(process.env.EXPO_PUBLIC_API_URL ?? getDefaultApiBaseUrl());
 const API_URL = `${API_BASE_URL}/api`;
 
 const isAbsoluteUrl = (value: string) =>
@@ -81,6 +108,7 @@ export const api = async (
 
   return payload;
 };
+
 const guessMimeType = (uri: string) => {
   if (uri.endsWith(".png")) return "image/png";
   if (uri.endsWith(".webp")) return "image/webp";
@@ -92,13 +120,20 @@ export const uploadPropertyImage = async (propertyId: number, uri: string) => {
   const filename = uri.split("/").pop() || `image-${Date.now()}.jpg`;
   const formData = new FormData();
 
-  formData.append("image", {
-    uri,
-    name: filename,
-    type: guessMimeType(filename),
-  } as any);
+  if (Platform.OS === "web") {
+    const imageResponse = await fetch(uri);
+    const imageBlob = await imageResponse.blob();
+    formData.append("image", imageBlob, filename);
+  } else {
+    formData.append("image", {
+      uri,
+      name: filename,
+      type: guessMimeType(filename),
+    } as any);
+  }
 
   let res: Response;
+
   try {
     res = await fetch(buildApiUrl(`/images/${propertyId}`), {
       method: "POST",
@@ -112,7 +147,8 @@ export const uploadPropertyImage = async (propertyId: number, uri: string) => {
       `No se pudo conectar al backend (${API_BASE_URL}). Verifica que el servidor esté encendido y accesible en red.`
     );
   }
-const contentType = res.headers.get("content-type") ?? "";
+
+  const contentType = res.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
     ? await res.json()
     : null;

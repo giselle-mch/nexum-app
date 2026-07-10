@@ -8,9 +8,21 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import MapView, { Marker, Region } from "react-native-maps";
 import { CommonActions } from "@react-navigation/native";
+import LocationPickerMap from "../../components/maps/LocationPickerMap";
 import { COLORS } from "../../constants/colors";
+
+type Region = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+};
+
+type Location = {
+  latitude: number;
+  longitude: number;
+};
 
 const DEFAULT_REGION: Region = {
   latitude: 31.6904,
@@ -44,18 +56,20 @@ export default function LocationPickerScreen({ route, navigation }: any) {
     return DEFAULT_REGION;
   }, [currentLat, currentLng]);
 
-  const [selected, setSelected] = useState({
+  const [selected, setSelected] = useState<Location>({
     latitude: initialRegion.latitude,
     longitude: initialRegion.longitude,
   });
+
+  const [mapRegion, setMapRegion] = useState<Region>(initialRegion);
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const mapRef = useRef<MapView | null>(null);
 
   const onSearch = async () => {
     const trimmed = query.trim();
+
     if (!trimmed) {
       setResults([]);
       setSearchError("");
@@ -69,6 +83,7 @@ export default function LocationPickerScreen({ route, navigation }: any) {
       const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(
         trimmed
       )}`;
+
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",
@@ -98,7 +113,7 @@ export default function LocationPickerScreen({ route, navigation }: any) {
       setResults(mapped);
     } catch (error) {
       setSearchError(
-        error instanceof Error ? error.message : "Error buscando direccion"
+        error instanceof Error ? error.message : "Error buscando dirección"
       );
       setResults([]);
     } finally {
@@ -107,19 +122,22 @@ export default function LocationPickerScreen({ route, navigation }: any) {
   };
 
   const onSelectResult = (item: SearchResult) => {
-    const next = { latitude: item.lat, longitude: item.lng };
-    setSelected(next);
+    const nextLocation = {
+      latitude: item.lat,
+      longitude: item.lng,
+    };
+
+    const nextRegion = {
+      latitude: item.lat,
+      longitude: item.lng,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+
+    setSelected(nextLocation);
+    setMapRegion(nextRegion);
     setResults([]);
     setQuery(item.name);
-
-    mapRef.current?.animateToRegion(
-      {
-        ...next,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      },
-      350
-    );
   };
 
   const onConfirmLocation = () => {
@@ -141,122 +159,123 @@ export default function LocationPickerScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-      <View
-        style={{
-          position: "absolute",
-          top: 16,
-          left: 12,
-          right: 12,
-          zIndex: 10,
-          backgroundColor: "#FFFFFF",
-          borderRadius: 12,
-          padding: 10,
-          gap: 8,
-          elevation: 5,
-        }}
-      >
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <TextInput
-            placeholder="Buscar direccion o lugar"
-            value={query}
-            onChangeText={setQuery}
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: COLORS.lightGray,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              backgroundColor: "#FFFFFF",
-            }}
-          />
-          <TouchableOpacity
-            onPress={onSearch}
-            style={{
-              backgroundColor: COLORS.primary,
-              borderRadius: 8,
-              paddingHorizontal: 14,
-              justifyContent: "center",
-            }}
-          >
-            <Text style={{ color: COLORS.white, fontWeight: "700" }}>Buscar</Text>
-          </TouchableOpacity>
-        </View>
-
-        {searching ? <ActivityIndicator color={COLORS.primary} /> : null}
-        {searchError ? <Text style={{ color: "#B42318" }}>{searchError}</Text> : null}
-
-        {results.length > 0 ? (
-          <FlatList
-            data={results}
-            keyExtractor={(item) => item.id}
-            style={{ maxHeight: 180 }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => onSelectResult(item)}
-                style={{
-                  borderBottomWidth: 1,
-                  borderBottomColor: COLORS.lightGray,
-                  paddingVertical: 8,
-                }}
-              >
-                <Text numberOfLines={2} style={{ color: COLORS.dark }}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-        ) : null}
-      </View>
-
-      <MapView
-        ref={(instance) => {
-          mapRef.current = instance;
-        }}
-        style={{ flex: 1 }}
-        initialRegion={initialRegion}
-        onPress={(event) => setSelected(event.nativeEvent.coordinate)}
-      >
-        <Marker
-          coordinate={selected}
-          draggable
-          onDragEnd={(event) => setSelected(event.nativeEvent.coordinate)}
-        />
-      </MapView>
-
-      <View
-        style={{
-          position: "absolute",
-          bottom: 16,
-          left: 16,
-          right: 16,
-          backgroundColor: "#FFFFFF",
-          borderRadius: 12,
-          padding: 14,
-          gap: 8,
-          elevation: 4,
-        }}
-      >
-        <Text style={{ color: COLORS.dark, fontWeight: "700" }}>
-          Selecciona la ubicacion del inmueble
-        </Text>
-        <Text style={{ color: "gray" }}>
-          Lat: {selected.latitude.toFixed(6)} | Lng: {selected.longitude.toFixed(6)}
-        </Text>
-        <TouchableOpacity
-          onPress={onConfirmLocation}
+        <View
           style={{
-            backgroundColor: COLORS.primary,
-            borderRadius: 10,
-            alignItems: "center",
-            paddingVertical: 12,
+            position: "absolute",
+            top: 16,
+            left: 12,
+            right: 12,
+            zIndex: 2000,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 12,
+            padding: 10,
+            gap: 8,
+            elevation: 5,
           }}
         >
-          <Text style={{ color: COLORS.white, fontWeight: "700" }}>
-            Usar esta ubicacion
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TextInput
+              placeholder="Buscar dirección o lugar"
+              value={query}
+              onChangeText={setQuery}
+              style={{
+                flex: 1,
+                borderWidth: 1,
+                borderColor: COLORS.lightGray,
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                backgroundColor: "#FFFFFF",
+              }}
+            />
+
+            <TouchableOpacity
+              onPress={onSearch}
+              style={{
+                backgroundColor: COLORS.primary,
+                borderRadius: 8,
+                paddingHorizontal: 14,
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: COLORS.white, fontWeight: "700" }}>
+                Buscar
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {searching ? <ActivityIndicator color={COLORS.primary} /> : null}
+
+          {searchError ? (
+            <Text style={{ color: "#B42318" }}>{searchError}</Text>
+          ) : null}
+
+          {results.length > 0 ? (
+            <FlatList
+              data={results}
+              keyExtractor={(item) => item.id}
+              style={{ maxHeight: 180 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => onSelectResult(item)}
+                  style={{
+                    borderBottomWidth: 1,
+                    borderBottomColor: COLORS.lightGray,
+                    paddingVertical: 8,
+                  }}
+                >
+                  <Text numberOfLines={2} style={{ color: COLORS.dark }}>
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          ) : null}
+        </View>
+
+        <LocationPickerMap
+          region={mapRegion}
+          selectedLocation={selected}
+          onSelectLocation={setSelected}
+        />
+
+        <View
+          style={{
+            position: "absolute",
+            bottom: 16,
+            left: 16,
+            right: 16,
+            zIndex: 2000,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 12,
+            padding: 14,
+            gap: 8,
+            elevation: 4,
+          }}
+        >
+          <Text style={{ color: COLORS.dark, fontWeight: "700" }}>
+            Selecciona la ubicación del inmueble
           </Text>
-        </TouchableOpacity>
-      </View>
+
+          <Text style={{ color: "gray" }}>
+            Lat: {selected.latitude.toFixed(6)} | Lng:{" "}
+            {selected.longitude.toFixed(6)}
+          </Text>
+
+          <TouchableOpacity
+            onPress={onConfirmLocation}
+            style={{
+              backgroundColor: COLORS.primary,
+              borderRadius: 10,
+              alignItems: "center",
+              paddingVertical: 12,
+            }}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: "700" }}>
+              Usar esta ubicación
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
