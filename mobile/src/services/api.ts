@@ -81,7 +81,6 @@ export const api = async (
 
   return payload;
 };
-
 const guessMimeType = (uri: string) => {
   if (uri.endsWith(".png")) return "image/png";
   if (uri.endsWith(".webp")) return "image/webp";
@@ -100,7 +99,6 @@ export const uploadPropertyImage = async (propertyId: number, uri: string) => {
   } as any);
 
   let res: Response;
-
   try {
     res = await fetch(buildApiUrl(`/images/${propertyId}`), {
       method: "POST",
@@ -114,8 +112,7 @@ export const uploadPropertyImage = async (propertyId: number, uri: string) => {
       `No se pudo conectar al backend (${API_BASE_URL}). Verifica que el servidor esté encendido y accesible en red.`
     );
   }
-
-  const contentType = res.headers.get("content-type") ?? "";
+const contentType = res.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
     ? await res.json()
     : null;
