@@ -22,8 +22,8 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=nexum
 DB_USER=postgres
-DB_PASSWORD=holabebe
-JWT_SECRET=nexum_secret_2026
+DB_PASSWORD=*****
+JWT_SECRET=*****
 ```
 
 Si falta `DB_PASSWORD`, el backend puede fallar con:
