@@ -37,8 +37,14 @@ const getDefaultApiBaseUrl = () => {
   return "http://localhost:3000";
 };
 
-const API_BASE_URL =
-  trimTrailingSlash(process.env.EXPO_PUBLIC_API_URL ?? getDefaultApiBaseUrl());
+// En desarrollo, Expo expone la IP actual de la computadora mediante
+// `scriptURL`. Usamos esa IP para que un cambio de red no deje la app
+// apuntando a una dirección anterior. La variable de entorno queda como
+// una sobrescritura opcional para un backend desplegado.
+const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const API_BASE_URL = trimTrailingSlash(
+  configuredApiUrl || getDefaultApiBaseUrl()
+);
 const API_URL = `${API_BASE_URL}/api`;
 
 const isAbsoluteUrl = (value: string) =>

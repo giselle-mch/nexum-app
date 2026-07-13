@@ -1,0 +1,39 @@
+CREATE TABLE IF NOT EXISTS usuarios (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  telefono VARCHAR(20),
+  rol VARCHAR(20) NOT NULL DEFAULT 'usuario',
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS inmuebles (
+  id SERIAL PRIMARY KEY,
+  titulo VARCHAR(150) NOT NULL,
+  descripcion TEXT,
+  precio NUMERIC(12,2),
+  tipo VARCHAR(50),
+  direccion TEXT,
+  ciudad VARCHAR(100),
+  latitud NUMERIC(10,7),
+  longitud NUMERIC(10,7),
+  telefono_contacto VARCHAR(20),
+  propietario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS property_images (
+  id SERIAL PRIMARY KEY,
+  property_id INTEGER NOT NULL REFERENCES inmuebles(id) ON DELETE CASCADE,
+  image_url TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS favorites (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  property_id INTEGER NOT NULL REFERENCES inmuebles(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, property_id)
+);

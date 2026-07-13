@@ -43,10 +43,14 @@ mobile/.env
 Contenido ejemplo:
 
 ```env
-EXPO_PUBLIC_API_URL=http://TU_IP_LOCAL:3000
+# Opcional. Si se omite o queda vacía, la app detecta la IP del servidor Expo.
+# Úsala únicamente para un backend remoto fijo.
+EXPO_PUBLIC_API_URL=
 ```
 
-La IP debe ser la que muestra Expo en la terminal. Por ejemplo, si Expo muestra:
+En desarrollo no necesitas escribir una IP: la app toma automáticamente la que
+muestra Expo en la terminal. Si necesitas conectar a un backend remoto fijo,
+define su URL completa. Por ejemplo:
 
 ```text
 Metro waiting on exp://192.168.100.27:8081
