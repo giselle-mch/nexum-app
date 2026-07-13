@@ -26,6 +26,7 @@ const getExpoDevServerHost = () => {
 const getDefaultApiBaseUrl = () => {
   const devServerHost = getExpoDevServerHost();
 
+  // En Expo Go, scriptURL contiene el host LAN actual de Metro.
   if (devServerHost && devServerHost !== "localhost") {
     return `http://${devServerHost}:3000`;
   }
