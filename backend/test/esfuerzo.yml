@@ -1,0 +1,23 @@
+config:
+  target: "http://localhost:3000"
+
+  phases:
+    - duration: 20
+      arrivalRate: 5
+      name: "Carga inicial"
+
+    - duration: 20
+      arrivalRate: 20
+      name: "Carga media"
+
+    - duration: 20
+      arrivalRate: 50
+      name: "Carga alta"
+
+scenarios:
+  - name: "Prueba de esfuerzo sobre propiedades"
+    flow:
+      - get:
+          url: "/api/properties"
+          expect:
+            - statusCode: 200

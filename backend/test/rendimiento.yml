@@ -1,0 +1,24 @@
+config:
+  target: "http://localhost:3000"
+
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Carga normal"
+
+scenarios:
+  - name: "Prueba de rendimiento del health check"
+    weight: 30
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "Consulta de propiedades"
+    weight: 70
+    flow:
+      - get:
+          url: "/api/properties"
+          expect:
+            - statusCode: 200
