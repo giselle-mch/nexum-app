@@ -7,6 +7,7 @@ const propertyRoutes = require('./routes/propertyRoutes')
 const imageRoutes = require('./routes/imageRoutes')
 const favoriteRoutes = require('./routes/favoriteRoutes');
 const conversationRoutes = require('./routes/conversationRoutes')
+const paymentRoutes = require('./routes/paymentRoutes')
 
 const app = express()
 
@@ -20,6 +21,7 @@ app.use('/api/images', imageRoutes)
 app.use('/uploads', express.static('uploads'))
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/conversations', conversationRoutes)
+app.use('/api/payments', paymentRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' })

@@ -14,6 +14,8 @@ import LocationPickerScreen from "../screens/user/LocationPickerScreen";
 import { api } from "../services/api";
 import ConversationListScreen from "../screens/user/ConversationListScreen";
 import ConversationScreen from "../screens/user/ConversationScreen";
+import PaymentListScreen from "../screens/user/PaymentListScreen";
+import CreatePaymentScreen from "../screens/user/CreatePaymentScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -53,6 +55,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Conversations" component={ConversationListScreen} />
             <Stack.Screen name="Conversation" component={ConversationScreen} />
+            <Stack.Screen name="Payments" component={PaymentListScreen} />
+            <Stack.Screen name="CreatePayment" component={CreatePaymentScreen} />
             {canManageProperties ? (
               <>
                 <Stack.Screen

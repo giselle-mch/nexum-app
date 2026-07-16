@@ -126,6 +126,9 @@ export default function LandlordDashboardScreen({ navigation }: any) {
             <Text style={{ color: COLORS.white, fontWeight: "700" }}>Publicar inmueble</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity onPress={() => navigation.navigate("Payments")} style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: COLORS.success, borderRadius: 12, alignItems: "center", padding: 12 }}>
+          <Text style={{ color: COLORS.white, fontWeight: "700" }}>Cobros e historial</Text>
+        </TouchableOpacity>
 
         <View style={{ paddingHorizontal: 16 }}>
           {errorMessage ? <StatePanel variant="error" message={errorMessage} /> : null}

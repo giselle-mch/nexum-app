@@ -6,7 +6,7 @@ import { COLORS } from "../../constants/colors";
 import { useAuthStore } from "../../store/authStore";
 
 type Message = { id: number; sender_id: number; sender_name: string; content: string; sent_at: string };
-type Detail = { conversation: { property_title: string }; messages: Message[] };
+type Detail = { conversation: { id: number; landlord_id: number; property_title: string }; messages: Message[] };
 
 export default function ConversationScreen({ route, navigation }: any) {
   const { id } = route.params;
@@ -40,6 +40,14 @@ export default function ConversationScreen({ route, navigation }: any) {
     } finally { setSending(false); }
   };
 
+  const createPayment = () => {
+    if (!detail) return;
+    navigation.navigate("CreatePayment", {
+      conversationId: detail.conversation.id,
+      propertyTitle: detail.conversation.property_title,
+    });
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -47,6 +55,11 @@ export default function ConversationScreen({ route, navigation }: any) {
           <TouchableOpacity onPress={() => navigation.goBack()}><Text style={{ fontSize: 22 }}>‹</Text></TouchableOpacity>
           <Text numberOfLines={1} style={{ flex: 1, fontSize: 18, fontWeight: "800", color: COLORS.ink }}>{detail?.conversation.property_title ?? "Conversación"}</Text>
         </View>
+        {detail?.conversation.landlord_id === user?.id ? (
+          <TouchableOpacity onPress={createPayment} style={{ margin: 12, marginBottom: 0, padding: 11, borderRadius: 10, backgroundColor: COLORS.accent, alignItems: "center" }}>
+            <Text style={{ color: COLORS.white, fontWeight: "800" }}>Crear cobro de renta</Text>
+          </TouchableOpacity>
+        ) : null}
         <FlatList
           ref={listRef}
           data={detail?.messages ?? []}
