@@ -326,16 +326,13 @@ export default function LoginScreen({ navigation }: any) {
 
         <TouchableOpacity
           onPress={() => {
-            setMode(isRecoveryMode ? "login" : "recovery");
-            setPassword("");
-            setName("");
-            setPhone("");
+            alert("La recuperación de contraseña no está disponible temporalmente.");
           }}
           disabled={loading}
           style={{ marginTop: 10, alignItems: "center" }}
         >
           <Text style={{ color: COLORS.secondary }}>
-            {isRecoveryMode ? "Volver a iniciar sesión" : "¿Olvidaste tu contraseña?"}
+            ¿Olvidaste tu contraseña?
           </Text>
         </TouchableOpacity>
       </Animated.View>

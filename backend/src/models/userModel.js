@@ -32,21 +32,6 @@ const User = {
 
     return result.rows[0]
 
-  },
-
-  async updatePasswordByEmail(email, password) {
-
-    const query = `
-      UPDATE usuarios
-      SET password = $1
-      WHERE email = $2
-      RETURNING id, nombre, email, telefono, rol
-    `
-
-    const result = await pool.query(query, [password, email])
-
-    return result.rows[0]
-
   }
 
 }
