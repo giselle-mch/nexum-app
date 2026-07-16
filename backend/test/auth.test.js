@@ -10,6 +10,15 @@ describe('Prueba de integración - Autenticación NEXUM', () => {
     expect(response.body.message).toBe('Token no proporcionado');
   });
 
+  test('GET /api/users/profile debe mostrar correctamente Token inválido', async () => {
+    const response = await request(app)
+      .get('/api/users/profile')
+      .set('Authorization', 'Bearer token-invalido');
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body.message).toBe('Token inválido');
+  });
+
   test('POST /api/auth/recover-password rechaza cambios sin verificacion', async () => {
     const response = await request(app)
       .post('/api/auth/recover-password')
