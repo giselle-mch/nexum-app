@@ -1,5 +1,6 @@
 import { useAuthStore } from "../store/authStore";
 import { NativeModules, Platform } from "react-native";
+import Constants from "expo-constants";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
@@ -7,7 +8,8 @@ const getHostFromUrl = (value?: string | null) => {
   if (!value) return null;
 
   try {
-    return new URL(value).hostname;
+    const normalized = value.includes("://") ? value : `http://${value}`;
+    return new URL(normalized).hostname;
   } catch (_error) {
     const match = value.match(/^[a-z]+:\/\/([^/:?#]+)/i);
     return match?.[1] ?? null;
@@ -19,6 +21,11 @@ const getExpoDevServerHost = () => {
     return window.location.hostname;
   }
 
+  // Expo Go publica la IP de Metro en hostUri. SourceCode queda como
+  // respaldo para builds de desarrollo que no incluyen ese manifiesto.
+  const expoHost = getHostFromUrl(Constants.expoConfig?.hostUri);
+  if (expoHost) return expoHost;
+
   const scriptURL = NativeModules.SourceCode?.scriptURL as string | undefined;
   return getHostFromUrl(scriptURL);
 };
@@ -26,7 +33,7 @@ const getExpoDevServerHost = () => {
 const getDefaultApiBaseUrl = () => {
   const devServerHost = getExpoDevServerHost();
 
-  // En Expo Go, scriptURL contiene el host LAN actual de Metro.
+  // En Expo Go, el manifiesto contiene el host LAN actual de Metro.
   if (devServerHost && devServerHost !== "localhost") {
     return `http://${devServerHost}:3000`;
   }
@@ -39,7 +46,7 @@ const getDefaultApiBaseUrl = () => {
 };
 
 // En desarrollo, Expo expone la IP actual de la computadora mediante
-// `scriptURL`. Usamos esa IP para que un cambio de red no deje la app
+// `hostUri`. Usamos esa IP para que un cambio de red no deje la app
 // apuntando a una dirección anterior. La variable de entorno queda como
 // una sobrescritura opcional para un backend desplegado.
 const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
