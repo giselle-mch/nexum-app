@@ -37,3 +37,26 @@ CREATE TABLE IF NOT EXISTS favorites (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(user_id, property_id)
 );
+
+CREATE TABLE IF NOT EXISTS conversations (
+  id SERIAL PRIMARY KEY,
+  property_id INTEGER NOT NULL REFERENCES inmuebles(id) ON DELETE CASCADE,
+  client_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  landlord_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(property_id, client_id),
+  CHECK (client_id <> landlord_id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  sender_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  content TEXT NOT NULL CHECK (char_length(trim(content)) BETWEEN 1 AND 2000),
+  sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_client ON conversations(client_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conversations_landlord ON conversations(landlord_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, sent_at ASC);

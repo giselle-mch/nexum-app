@@ -12,6 +12,8 @@ import LandlordDashboardScreen from "../screens/user/LandlordDashboardScreen";
 import PropertyFormScreen from "../screens/user/PropertyFormScreen";
 import LocationPickerScreen from "../screens/user/LocationPickerScreen";
 import { api } from "../services/api";
+import ConversationListScreen from "../screens/user/ConversationListScreen";
+import ConversationScreen from "../screens/user/ConversationScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -49,6 +51,8 @@ export default function AppNavigator() {
             <Stack.Screen name="List" component={PropertyListScreen} />
             <Stack.Screen name="Detail" component={PropertyDetailScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Conversations" component={ConversationListScreen} />
+            <Stack.Screen name="Conversation" component={ConversationScreen} />
             {canManageProperties ? (
               <>
                 <Stack.Screen

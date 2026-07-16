@@ -185,6 +185,10 @@ export default function ProfileScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        <TouchableOpacity onPress={() => navigation.navigate("Conversations")} style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: COLORS.accent, borderRadius: 12, alignItems: "center", padding: 12 }}>
+          <Text style={{ color: COLORS.white, fontWeight: "700" }}>Mis mensajes</Text>
+        </TouchableOpacity>
+
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <SectionHeader title="Favoritos" subtitle="Tus inmuebles guardados" icon="heart-outline" />
 

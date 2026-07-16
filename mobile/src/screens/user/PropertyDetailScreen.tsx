@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api, toAssetUrl } from "../../services/api";
 import { COLORS } from "../../constants/colors";
 import { normalizePhoneToE164, toWhatsAppDigits } from "../../utils/phone";
+import { useAuthStore } from "../../store/authStore";
 
 type PropertyDetail = {
   id: number;
@@ -28,13 +29,15 @@ type PropertyDetail = {
     lng: number | null;
   };
   distanceKm?: number;
+  owner: { id: number; name: string | null };
 };
 
-export default function PropertyDetailScreen({ route }: any) {
+export default function PropertyDetailScreen({ route, navigation }: any) {
   const { id } = route.params;
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     fetchInitialData();
@@ -141,6 +144,15 @@ export default function PropertyDetailScreen({ route }: any) {
     }
 
     await Linking.openURL(whatsappUrl);
+  };
+
+  const onStartConversation = async () => {
+    try {
+      const conversation = await api("/conversations", "POST", { propertyId: property.id });
+      navigation.navigate("Conversation", { id: conversation.id });
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "No fue posible iniciar la conversación");
+    }
   };
 
   return (
@@ -260,6 +272,12 @@ export default function PropertyDetailScreen({ route }: any) {
                   : "Guardar en favoritos"}
             </Text>
           </TouchableOpacity>
+
+          {user?.id !== property.owner.id ? (
+            <TouchableOpacity onPress={onStartConversation} style={{ marginTop: 12, backgroundColor: COLORS.accent, padding: 14, borderRadius: 12, alignItems: "center" }}>
+              <Text style={{ color: COLORS.white, fontWeight: "700" }}>Enviar mensaje al arrendador</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
