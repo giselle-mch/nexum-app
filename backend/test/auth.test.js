@@ -9,4 +9,15 @@ describe('Prueba de integración - Autenticación NEXUM', () => {
     expect(response.body).toHaveProperty('message');
     expect(response.body.message).toBe('Token no proporcionado');
   });
+
+  test('POST /api/auth/recover-password rechaza cambios sin verificacion', async () => {
+    const response = await request(app)
+      .post('/api/auth/recover-password')
+      .send({ email: 'victima@test.com', newPassword: 'atacante123' });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.body.message).toBe(
+      'La recuperacion de contrasena no esta disponible temporalmente'
+    );
+  });
 });

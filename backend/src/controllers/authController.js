@@ -112,41 +112,11 @@ const login = async (req, res) => {
 }
 
 const recoverPassword = async (req, res) => {
-
-  try {
-
-    const { email, newPassword } = req.body
-
-    if (!email || !newPassword) {
-      return res.status(400).json({
-        message: "Email y nueva contraseña son requeridos"
-      })
-    }
-
-    const existingUser = await User.findByEmail(email)
-
-    if (!existingUser) {
-      return res.status(404).json({
-        message: "Usuario no encontrado"
-      })
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
-    await User.updatePasswordByEmail(email, hashedPassword)
-
-    res.json({
-      message: "Contraseña actualizada correctamente"
-    })
-
-  } catch (error) {
-
-    res.status(500).json({
-      message: "Error recuperando contraseña",
-      error
-    })
-
-  }
-
+  // No se permite restablecer una contrasena solo conociendo el email.
+  // Se requiere un token temporal y un canal de entrega verificado.
+  return res.status(503).json({
+    message: "La recuperacion de contrasena no esta disponible temporalmente"
+  })
 }
 
 module.exports = {
