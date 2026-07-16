@@ -14,7 +14,7 @@ const addFavorite = async (req, res) => {
   } catch (error) {
 
     console.error("Error agregando favorito:", error);
-    res.status(500).json({ error: "Error agregando favorito" });
+    res.status(500).json({ message: "Error agregando favorito" });
 
   }
 
@@ -33,7 +33,9 @@ const removeFavorite = async (req, res) => {
 
   } catch (error) {
 
-    res.status(500).json({ error: "Error eliminando favorito" });
+    console.error("Error eliminando favorito:", error);
+
+    res.status(500).json({ message: "Error eliminando favorito" });
 
   }
 
@@ -51,7 +53,9 @@ const getFavorites = async (req, res) => {
 
   } catch (error) {
 
-    res.status(500).json({ error: "Error obteniendo favoritos" });
+    console.error("Error obteniendo favoritos:", error);
+
+    res.status(500).json({ message: "Error obteniendo favoritos" });
 
   }
 

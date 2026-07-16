@@ -19,8 +19,7 @@ const uploadImage = async (req, res) => {
     console.error("Error detallado:", error); 
     
     res.status(500).json({
-      message: "Error subiendo imagen",
-      error: error.message
+      message: "Error subiendo imagen"
     });
   }
 };

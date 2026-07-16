@@ -53,9 +53,10 @@ const register = async (req, res) => {
 
   } catch (error) {
 
+    console.error("Error en register:", error)
+
     res.status(500).json({
-      message: "Error en registro",
-      error
+      message: "Error en registro"
     })
 
   }
@@ -102,9 +103,10 @@ const login = async (req, res) => {
 
   } catch (error) {
 
+    console.error("Error en login:", error)
+
     res.status(500).json({
-      message: "Error en login",
-      error
+      message: "Error en login"
     })
 
   }
