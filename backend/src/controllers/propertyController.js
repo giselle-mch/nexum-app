@@ -103,8 +103,7 @@ const createProperty = async (req, res) => {
 
     console.error("Error en createProperty:", error)
     res.status(500).json({
-      message: "Error creando inmueble",
-      error
+      message: "Error creando inmueble"
     })
 
   }
@@ -124,8 +123,7 @@ const getProperties = async (req, res) => {
     console.error("Error en getProperties:", error)
 
     res.status(500).json({
-      message: "Error obteniendo inmuebles",
-      error: error.message
+      message: "Error obteniendo inmuebles"
     })
 
   }
@@ -149,8 +147,7 @@ const getPropertyById = async (req, res) => {
     console.error("Error en getPropertyById:", error)
 
     res.status(500).json({
-      message: "Error obteniendo inmueble",
-      error: error.message
+      message: "Error obteniendo inmueble"
     })
 
   }
@@ -192,8 +189,7 @@ const getMapProperties = async (req, res) => {
     console.error("Error en getMapProperties:", error)
 
     res.status(500).json({
-      message: "Error obteniendo propiedades para mapa",
-      error: error.message
+      message: "Error obteniendo propiedades para mapa"
     })
 
   }
@@ -219,8 +215,7 @@ const searchProperties = async (req, res) => {
     console.error("Error en searchProperties:", error)
 
     res.status(500).json({
-      message: "Error buscando inmuebles",
-      error: error.message
+      message: "Error buscando inmuebles"
     })
 
   }
@@ -250,8 +245,7 @@ const getNearbyProperties = async (req, res) => {
     console.error("Error en getNearbyProperties:", error)
 
     res.status(500).json({
-      message: "Error buscando propiedades cercanas",
-      error: error.message
+      message: "Error buscando propiedades cercanas"
     })
 
   }
@@ -269,8 +263,10 @@ const getMyProperties = async (req, res) => {
 
  } catch (error) {
 
+  console.error("Error en getMyProperties:", error)
+
   res.status(500).json({
-   error: "Error obteniendo propiedades del usuario"
+   message: "Error obteniendo propiedades del usuario"
   });
 
  }
@@ -302,8 +298,7 @@ const updateMyProperty = async (req, res) => {
 
     console.error("Error en updateMyProperty:", error)
     res.status(500).json({
-      message: "Error actualizando inmueble",
-      error: error.message
+      message: "Error actualizando inmueble"
     })
 
   }
@@ -333,8 +328,7 @@ const deleteMyProperty = async (req, res) => {
 
     console.error("Error en deleteMyProperty:", error)
     res.status(500).json({
-      message: "Error eliminando inmueble",
-      error: error.message
+      message: "Error eliminando inmueble"
     })
 
   }
