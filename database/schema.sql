@@ -60,3 +60,22 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS idx_conversations_client ON conversations(client_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_conversations_landlord ON conversations(landlord_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, sent_at ASC);
+
+CREATE TABLE IF NOT EXISTS rent_payments (
+  id SERIAL PRIMARY KEY,
+  conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  property_id INTEGER NOT NULL REFERENCES inmuebles(id) ON DELETE CASCADE,
+  client_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  landlord_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+  due_date DATE NOT NULL,
+  paid_at TIMESTAMP,
+  status VARCHAR(20) NOT NULL DEFAULT 'pendiente'
+    CHECK (status IN ('pendiente', 'pagado', 'cancelado')),
+  reference VARCHAR(80) NOT NULL UNIQUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (client_id <> landlord_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rent_payments_client ON rent_payments(client_id, due_date DESC);
+CREATE INDEX IF NOT EXISTS idx_rent_payments_landlord ON rent_payments(landlord_id, due_date DESC);
