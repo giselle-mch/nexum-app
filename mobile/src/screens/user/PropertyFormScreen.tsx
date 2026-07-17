@@ -26,6 +26,8 @@ type PropertyDetail = {
   location: {
     address: string | null;
     city: string | null;
+    neighborhood: string | null;
+    postalCode: string | null;
     lat: number | null;
     lng: number | null;
   };
@@ -38,6 +40,8 @@ type FormState = {
   tipo: string;
   direccion: string;
   ciudad: string;
+  colonia: string;
+  codigo_postal: string;
   latitud: string;
   longitud: string;
   telefono_contacto: string;
@@ -50,6 +54,8 @@ const EMPTY_FORM: FormState = {
   tipo: "",
   direccion: "",
   ciudad: "",
+  colonia: "",
+  codigo_postal: "",
   latitud: "",
   longitud: "",
   telefono_contacto: "",
@@ -73,7 +79,7 @@ export default function PropertyFormScreen({ route, navigation }: any) {
 
   useEffect(() => {
     const selectedLocation = route?.params?.selectedLocation as
-      | { lat: number; lng: number }
+      | { lat: number; lng: number; address?: string; city?: string; neighborhood?: string; postalCode?: string }
       | undefined;
 
     if (!selectedLocation) return;
@@ -82,6 +88,10 @@ export default function PropertyFormScreen({ route, navigation }: any) {
       ...prev,
       latitud: String(selectedLocation.lat),
       longitud: String(selectedLocation.lng),
+      direccion: selectedLocation.address || prev.direccion,
+      ciudad: selectedLocation.city || prev.ciudad,
+      colonia: selectedLocation.neighborhood || prev.colonia,
+      codigo_postal: selectedLocation.postalCode || prev.codigo_postal,
     }));
 
     navigation.setParams({ selectedLocation: undefined });
@@ -98,6 +108,8 @@ export default function PropertyFormScreen({ route, navigation }: any) {
         tipo: data.type ?? "",
         direccion: data.location?.address ?? "",
         ciudad: data.location?.city ?? "",
+        colonia: data.location?.neighborhood ?? "",
+        codigo_postal: data.location?.postalCode ?? "",
         latitud:
           data.location?.lat !== null && data.location?.lat !== undefined
             ? String(data.location.lat)
@@ -161,6 +173,8 @@ export default function PropertyFormScreen({ route, navigation }: any) {
       tipo: form.tipo.trim(),
       direccion: form.direccion.trim(),
       ciudad: form.ciudad.trim(),
+      colonia: form.colonia.trim(),
+      codigo_postal: form.codigo_postal.trim(),
       latitud: form.latitud.trim() ? parseNumber(form.latitud.trim()) : null,
       longitud: form.longitud.trim() ? parseNumber(form.longitud.trim()) : null,
       telefono_contacto: "",
@@ -178,6 +192,21 @@ export default function PropertyFormScreen({ route, navigation }: any) {
 
     if (payload.longitud === null && form.longitud.trim() !== "") {
       Alert.alert("Dato inválido", "La longitud debe ser numérica.");
+      return;
+    }
+
+    if (payload.codigo_postal && !/^\d{5}$/.test(payload.codigo_postal)) {
+      Alert.alert("Código postal inválido", "El código postal debe contener 5 dígitos.");
+      return;
+    }
+
+    if (payload.latitud === null || payload.longitud === null) {
+      Alert.alert("Ubicación requerida", "Selecciona la ubicación del inmueble en el mapa.");
+      return;
+    }
+
+    if (payload.latitud < -90 || payload.latitud > 90 || payload.longitud < -180 || payload.longitud > 180) {
+      Alert.alert("Ubicación inválida", "La ubicación seleccionada está fuera de los rangos permitidos.");
       return;
     }
 
@@ -289,20 +318,27 @@ export default function PropertyFormScreen({ route, navigation }: any) {
 
       <View style={{ flexDirection: "row", gap: 10 }}>
         <TextInput
-          placeholder="Latitud (automática al elegir en mapa)"
-          keyboardType="decimal-pad"
-          value={form.latitud}
-          onChangeText={(text) => updateField("latitud", text)}
+          placeholder="Colonia"
+          value={form.colonia}
+          onChangeText={(text) => updateField("colonia", text)}
           style={{ flex: 1, borderWidth: 1, borderColor: COLORS.lightGray, borderRadius: 8, padding: 12, backgroundColor: COLORS.white }}
         />
-
         <TextInput
-          placeholder="Longitud (automática al elegir en mapa)"
-          keyboardType="decimal-pad"
-          value={form.longitud}
-          onChangeText={(text) => updateField("longitud", text)}
-          style={{ flex: 1, borderWidth: 1, borderColor: COLORS.lightGray, borderRadius: 8, padding: 12, backgroundColor: COLORS.white }}
+          placeholder="Código postal"
+          keyboardType="number-pad"
+          maxLength={5}
+          value={form.codigo_postal}
+          onChangeText={(text) => updateField("codigo_postal", text.replace(/\D/g, ""))}
+          style={{ width: 135, borderWidth: 1, borderColor: COLORS.lightGray, borderRadius: 8, padding: 12, backgroundColor: COLORS.white }}
         />
+      </View>
+
+      <View style={{ padding: 12, borderRadius: 10, backgroundColor: form.latitud && form.longitud ? "#EAF7EE" : "#FFF4CE" }}>
+        <Text style={{ color: COLORS.dark, fontWeight: "600" }}>
+          {form.latitud && form.longitud
+            ? `Ubicación confirmada${form.colonia ? ` en ${form.colonia}` : ""}${form.codigo_postal ? `, CP ${form.codigo_postal}` : ""}`
+            : "Selecciona la ubicación en el mapa antes de publicar."}
+        </Text>
       </View>
 
       <TouchableOpacity
@@ -321,7 +357,7 @@ export default function PropertyFormScreen({ route, navigation }: any) {
         }}
       >
         <Text style={{ color: COLORS.white, fontWeight: "600" }}>
-          Buscar ubicación en mapa
+          {form.latitud && form.longitud ? "Cambiar ubicación en mapa" : "Seleccionar ubicación en mapa"}
         </Text>
       </TouchableOpacity>
 

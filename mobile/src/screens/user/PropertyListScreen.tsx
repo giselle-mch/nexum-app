@@ -23,6 +23,8 @@ export default function PropertyListScreen({ navigation }: any) {
   const [properties, setProperties] = useState<PropertyListItem[]>([]);
   const [city, setCity] = useState("");
   const [type, setType] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,6 +48,8 @@ export default function PropertyListScreen({ navigation }: any) {
       const data = await api(endpoint, "GET", undefined, {
         ciudad: city,
         tipo: type,
+        colonia: neighborhood,
+        codigo_postal: postalCode,
         precio_min: minPrice ? Number(minPrice) : undefined,
         precio_max: maxPrice ? Number(maxPrice) : undefined,
       });
@@ -117,7 +121,23 @@ export default function PropertyListScreen({ navigation }: any) {
             />
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
-                placeholder="Mín"
+                placeholder="Colonia"
+                value={neighborhood}
+                onChangeText={setNeighborhood}
+                style={{ flex: 1, borderWidth: 1, borderColor: COLORS.border, padding: 10, borderRadius: 10, backgroundColor: COLORS.white }}
+              />
+              <TextInput
+                placeholder="Código postal"
+                value={postalCode}
+                onChangeText={(text) => setPostalCode(text.replace(/\D/g, ""))}
+                keyboardType="number-pad"
+                maxLength={5}
+                style={{ width: 130, borderWidth: 1, borderColor: COLORS.border, padding: 10, borderRadius: 10, backgroundColor: COLORS.white }}
+              />
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TextInput
+                placeholder="Precio mínimo"
                 value={minPrice}
                 onChangeText={setMinPrice}
                 keyboardType="numeric"
@@ -131,7 +151,7 @@ export default function PropertyListScreen({ navigation }: any) {
                 }}
               />
               <TextInput
-                placeholder="Máx"
+                placeholder="Precio máximo"
                 value={maxPrice}
                 onChangeText={setMaxPrice}
                 keyboardType="numeric"
@@ -162,6 +182,8 @@ export default function PropertyListScreen({ navigation }: any) {
                 onPress={() => {
                   setCity("");
                   setType("");
+                  setNeighborhood("");
+                  setPostalCode("");
                   setMinPrice("");
                   setMaxPrice("");
                   fetchProperties(false);
@@ -196,7 +218,7 @@ export default function PropertyListScreen({ navigation }: any) {
             ) : null
           }
           onRefresh={() =>
-            fetchProperties(city !== "" || type !== "" || minPrice !== "" || maxPrice !== "")
+            fetchProperties(city !== "" || type !== "" || neighborhood !== "" || postalCode !== "" || minPrice !== "" || maxPrice !== "")
           }
           refreshing={loading}
           renderItem={({ item }) => (

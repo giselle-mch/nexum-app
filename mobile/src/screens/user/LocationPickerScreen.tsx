@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CommonActions } from "@react-navigation/native";
 import LocationPickerMap from "../../components/maps/LocationPickerMap";
 import { COLORS } from "../../constants/colors";
+import * as ExpoLocation from "expo-location";
 
 type Region = {
   latitude: number;
@@ -36,6 +37,10 @@ type SearchResult = {
   name: string;
   lat: number;
   lng: number;
+  address?: string;
+  city?: string;
+  neighborhood?: string;
+  postalCode?: string;
 };
 
 export default function LocationPickerScreen({ route, navigation }: any) {
@@ -66,6 +71,18 @@ export default function LocationPickerScreen({ route, navigation }: any) {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [selectedDetails, setSelectedDetails] = useState<{
+    address?: string;
+    city?: string;
+    neighborhood?: string;
+    postalCode?: string;
+  }>({});
+
+  const toAddressDetails = (address?: Record<string, string>) => ({
+    city: address?.city || address?.town || address?.municipality || address?.village,
+    neighborhood: address?.neighbourhood || address?.suburb || address?.quarter,
+    postalCode: address?.postcode,
+  });
 
   const onSearch = async () => {
     const trimmed = query.trim();
@@ -80,7 +97,7 @@ export default function LocationPickerScreen({ route, navigation }: any) {
       setSearching(true);
       setSearchError("");
 
-      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=mx&limit=5&q=${encodeURIComponent(
         trimmed
       )}`;
 
@@ -99,6 +116,7 @@ export default function LocationPickerScreen({ route, navigation }: any) {
         display_name: string;
         lat: string;
         lon: string;
+        address?: Record<string, string>;
       }>;
 
       const mapped = payload
@@ -107,6 +125,8 @@ export default function LocationPickerScreen({ route, navigation }: any) {
           name: item.display_name,
           lat: Number(item.lat),
           lng: Number(item.lon),
+          address: item.display_name,
+          ...toAddressDetails(item.address),
         }))
         .filter((item) => !Number.isNaN(item.lat) && !Number.isNaN(item.lng));
 
@@ -138,6 +158,53 @@ export default function LocationPickerScreen({ route, navigation }: any) {
     setMapRegion(nextRegion);
     setResults([]);
     setQuery(item.name);
+    setSelectedDetails({
+      address: item.address,
+      city: item.city,
+      neighborhood: item.neighborhood,
+      postalCode: item.postalCode,
+    });
+  };
+
+  const onUseCurrentLocation = async () => {
+    try {
+      setSearching(true);
+      setSearchError("");
+      const permission = await ExpoLocation.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        setSearchError("Permiso rechazado. Puedes buscar una dirección manualmente.");
+        return;
+      }
+
+      const current = await ExpoLocation.getCurrentPositionAsync({
+        accuracy: ExpoLocation.Accuracy.Balanced,
+      });
+      const next = {
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+      };
+      setSelected(next);
+      setMapRegion({ ...next, latitudeDelta: 0.01, longitudeDelta: 0.01 });
+      setQuery("Mi ubicación actual");
+
+      const reverseUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${next.latitude}&lon=${next.longitude}`;
+      const response = await fetch(reverseUrl, { headers: { Accept: "application/json" } });
+      if (response.ok) {
+        const place = (await response.json()) as {
+          display_name?: string;
+          address?: Record<string, string>;
+        };
+        setQuery(place.display_name || "Mi ubicación actual");
+        setSelectedDetails({
+          address: place.display_name,
+          ...toAddressDetails(place.address),
+        });
+      }
+    } catch (_error) {
+      setSearchError("No fue posible obtener tu ubicación. Busca una dirección manualmente.");
+    } finally {
+      setSearching(false);
+    }
   };
 
   const onConfirmLocation = () => {
@@ -147,6 +214,7 @@ export default function LocationPickerScreen({ route, navigation }: any) {
           selectedLocation: {
             lat: selected.latitude,
             lng: selected.longitude,
+            ...selectedDetails,
           },
         }),
         source: formRouteKey,
@@ -175,7 +243,7 @@ export default function LocationPickerScreen({ route, navigation }: any) {
         >
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TextInput
-              placeholder="Buscar dirección o lugar"
+              placeholder="Dirección, colonia o código postal"
               value={query}
               onChangeText={setQuery}
               style={{
@@ -203,6 +271,20 @@ export default function LocationPickerScreen({ route, navigation }: any) {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            onPress={onUseCurrentLocation}
+            style={{
+              backgroundColor: COLORS.secondary,
+              borderRadius: 8,
+              paddingVertical: 9,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: "700" }}>
+              Usar mi ubicación
+            </Text>
+          </TouchableOpacity>
 
           {searching ? <ActivityIndicator color={COLORS.primary} /> : null}
 
@@ -236,7 +318,11 @@ export default function LocationPickerScreen({ route, navigation }: any) {
         <LocationPickerMap
           region={mapRegion}
           selectedLocation={selected}
-          onSelectLocation={setSelected}
+          onSelectLocation={(location) => {
+            setSelected(location);
+            setSelectedDetails({});
+            setQuery("Ubicación seleccionada en el mapa");
+          }}
         />
 
         <View
@@ -257,9 +343,8 @@ export default function LocationPickerScreen({ route, navigation }: any) {
             Selecciona la ubicación del inmueble
           </Text>
 
-          <Text style={{ color: "gray" }}>
-            Lat: {selected.latitude.toFixed(6)} | Lng:{" "}
-            {selected.longitude.toFixed(6)}
+          <Text numberOfLines={2} style={{ color: "gray" }}>
+            {query || "Toca el mapa para colocar el marcador"}
           </Text>
 
           <TouchableOpacity
