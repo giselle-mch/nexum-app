@@ -109,24 +109,45 @@ export default function MapScreen({ navigation }: any) {
         </TouchableOpacity>
 
         {canManageProperties ? (
-          <TouchableOpacity
-            onPress={() => navigation.navigate("LandlordDashboard")}
-            style={{
-              backgroundColor: "#FFFFFF",
-              paddingHorizontal: 15,
-              paddingVertical: 11,
-              borderRadius: 14,
-              elevation: 5,
-              shadowColor: "#0A1526",
-              shadowOpacity: 0.14,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 4 },
-            }}
-          >
-            <Text style={{ color: "#0B1F33", fontWeight: "800" }}>
-              Arrendador
-            </Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("PropertyForm")}
+              style={{
+                backgroundColor: "#C56E3D",
+                paddingHorizontal: 15,
+                paddingVertical: 11,
+                borderRadius: 14,
+                elevation: 5,
+                shadowColor: "#0A1526",
+                shadowOpacity: 0.14,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 4 },
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontWeight: "800" }}>
+                + Publicar inmueble
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate("LandlordDashboard")}
+              style={{
+                backgroundColor: "#FFFFFF",
+                paddingHorizontal: 15,
+                paddingVertical: 11,
+                borderRadius: 14,
+                elevation: 5,
+                shadowColor: "#0A1526",
+                shadowOpacity: 0.14,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 4 },
+              }}
+            >
+              <Text style={{ color: "#0B1F33", fontWeight: "800" }}>
+                Mis publicaciones
+              </Text>
+            </TouchableOpacity>
+          </>
         ) : null}
       </View>
 
