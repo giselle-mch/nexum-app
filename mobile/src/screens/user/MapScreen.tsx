@@ -1,5 +1,6 @@
 ﻿import { View, TouchableOpacity, Text, Alert } from "react-native";
 import { useCallback, useState } from "react";
+import { TextInput } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import PropertyMap from "../../components/maps/PropertyMap";
 import { api } from "../../services/api";
@@ -31,6 +32,7 @@ const INITIAL_REGION: Region = {
 export default function MapScreen({ navigation }: any) {
   const [properties, setProperties] = useState<MapProperty[]>([]);
   const [fitToMarkersToken, setFitToMarkersToken] = useState(0);
+  const [postalCode, setPostalCode] = useState("");
   const user = useAuthStore((state) => state.user);
   const canManageProperties = user?.rol === "arrendador" || user?.rol === "admin";
 
@@ -81,6 +83,52 @@ export default function MapScreen({ navigation }: any) {
 
   return (
     <View style={{ flex: 1 }}>
+      <View
+        style={{
+          position: "absolute",
+          top: 56,
+          left: 16,
+          zIndex: 2000,
+          elevation: 10,
+          flexDirection: "row",
+          gap: 6,
+        }}
+      >
+        <TextInput
+          value={postalCode}
+          onChangeText={(text) => setPostalCode(text.replace(/\D/g, ""))}
+          placeholder="Código postal"
+          keyboardType="number-pad"
+          maxLength={5}
+          style={{
+            width: 135,
+            backgroundColor: "#FFFFFF",
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderRadius: 14,
+            elevation: 5,
+          }}
+        />
+        <TouchableOpacity
+          onPress={() => {
+            if (postalCode.length !== 5) {
+              Alert.alert("Código postal inválido", "Escribe un código postal de 5 dígitos.");
+              return;
+            }
+            navigation.navigate("List", { locationQuery: postalCode });
+          }}
+          style={{
+            backgroundColor: "#C56E3D",
+            paddingHorizontal: 13,
+            justifyContent: "center",
+            borderRadius: 14,
+            elevation: 5,
+          }}
+        >
+          <Text style={{ color: "#FFFFFF", fontWeight: "800" }}>Buscar</Text>
+        </TouchableOpacity>
+      </View>
+
       <View
         style={{
           position: "absolute",

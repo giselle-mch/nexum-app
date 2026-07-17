@@ -6,8 +6,8 @@ const Property = {
 
     const query = `
       INSERT INTO inmuebles
-      (titulo, descripcion, precio, tipo, direccion, ciudad, latitud, longitud, telefono_contacto, propietario_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      (titulo, descripcion, precio, tipo, direccion, ciudad, colonia, codigo_postal, latitud, longitud, telefono_contacto, propietario_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
       RETURNING *
     `
 
@@ -18,6 +18,8 @@ const Property = {
       property.tipo,
       property.direccion,
       property.ciudad,
+      property.colonia,
+      property.codigo_postal,
       property.latitud,
       property.longitud,
       property.telefono_contacto,
@@ -191,6 +193,12 @@ const Property = {
     const values = []
     let index = 1
 
+    if (filters.ubicacion) {
+        query += ` AND (p.direccion ILIKE $${index} OR p.ciudad ILIKE $${index} OR p.colonia ILIKE $${index} OR p.codigo_postal ILIKE $${index})`
+        values.push(`%${filters.ubicacion.trim()}%`)
+        index++
+    }
+
     if (filters.ciudad) {
         query += ` AND p.ciudad ILIKE $${index}`
         values.push(`%${filters.ciudad}%`)
@@ -200,6 +208,18 @@ const Property = {
     if (filters.tipo) {
         query += ` AND p.tipo ILIKE $${index}`
         values.push(filters.tipo.trim())
+        index++
+    }
+
+    if (filters.colonia) {
+        query += ` AND p.colonia ILIKE $${index}`
+        values.push(`%${filters.colonia.trim()}%`)
+        index++
+    }
+
+    if (filters.codigo_postal) {
+        query += ` AND p.codigo_postal = $${index}`
+        values.push(filters.codigo_postal.trim())
         index++
     }
 
@@ -255,6 +275,8 @@ const Property = {
       'tipo',
       'direccion',
       'ciudad',
+      'colonia',
+      'codigo_postal',
       'latitud',
       'longitud',
       'telefono_contacto'

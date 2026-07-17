@@ -17,19 +17,23 @@ type PropertyListItem = {
   distanceKm?: number;
 };
 
-export default function PropertyListScreen({ navigation }: any) {
+export default function PropertyListScreen({ navigation, route }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const [properties, setProperties] = useState<PropertyListItem[]>([]);
+  const [locationQuery, setLocationQuery] = useState(route.params?.locationQuery || "");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [city, setCity] = useState("");
   const [type, setType] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    fetchProperties();
+    fetchProperties(Boolean(route.params?.locationQuery));
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 350,
@@ -44,8 +48,11 @@ export default function PropertyListScreen({ navigation }: any) {
 
       const endpoint = withFilters ? "/properties/search" : "/properties";
       const data = await api(endpoint, "GET", undefined, {
+        ubicacion: locationQuery,
         ciudad: city,
         tipo: type,
+        colonia: neighborhood,
+        codigo_postal: postalCode,
         precio_min: minPrice ? Number(minPrice) : undefined,
         precio_max: maxPrice ? Number(maxPrice) : undefined,
       });
@@ -92,6 +99,29 @@ export default function PropertyListScreen({ navigation }: any) {
             }}
           >
             <TextInput
+              placeholder="Dirección, colonia o código postal"
+              value={locationQuery}
+              onChangeText={setLocationQuery}
+              onSubmitEditing={() => fetchProperties(true)}
+              style={{
+                borderWidth: 1,
+                borderColor: COLORS.border,
+                padding: 10,
+                borderRadius: 10,
+                backgroundColor: COLORS.white,
+              }}
+            />
+            <TouchableOpacity
+              onPress={() => setAdvancedOpen((current) => !current)}
+              style={{ paddingVertical: 5, alignItems: "center" }}
+            >
+              <Text style={{ color: COLORS.primary, fontWeight: "700" }}>
+                {advancedOpen ? "Ocultar búsqueda avanzada" : "Búsqueda avanzada"}
+              </Text>
+            </TouchableOpacity>
+            {advancedOpen ? (
+              <>
+            <TextInput
               placeholder="Ciudad"
               value={city}
               onChangeText={setCity}
@@ -115,6 +145,24 @@ export default function PropertyListScreen({ navigation }: any) {
                 backgroundColor: COLORS.white,
               }}
             />
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TextInput
+                placeholder="Colonia"
+                value={neighborhood}
+                onChangeText={setNeighborhood}
+                style={{ flex: 1, borderWidth: 1, borderColor: COLORS.border, padding: 10, borderRadius: 10, backgroundColor: COLORS.white }}
+              />
+              <TextInput
+                placeholder="Código postal"
+                value={postalCode}
+                onChangeText={(text) => setPostalCode(text.replace(/\D/g, ""))}
+                keyboardType="number-pad"
+                maxLength={5}
+                style={{ width: 130, borderWidth: 1, borderColor: COLORS.border, padding: 10, borderRadius: 10, backgroundColor: COLORS.white }}
+              />
+            </View>
+              </>
+            ) : null}
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
                 placeholder="Mín"
@@ -160,8 +208,11 @@ export default function PropertyListScreen({ navigation }: any) {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
+                  setLocationQuery("");
                   setCity("");
                   setType("");
+                  setNeighborhood("");
+                  setPostalCode("");
                   setMinPrice("");
                   setMaxPrice("");
                   fetchProperties(false);
@@ -196,7 +247,7 @@ export default function PropertyListScreen({ navigation }: any) {
             ) : null
           }
           onRefresh={() =>
-            fetchProperties(city !== "" || type !== "" || minPrice !== "" || maxPrice !== "")
+            fetchProperties(locationQuery !== "" || city !== "" || type !== "" || neighborhood !== "" || postalCode !== "" || minPrice !== "" || maxPrice !== "")
           }
           refreshing={loading}
           renderItem={({ item }) => (

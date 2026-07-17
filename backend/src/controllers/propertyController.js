@@ -25,6 +25,33 @@ const parseOptionalNumber = (value) => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+const normalizeLocationFields = (data, { requireCoordinates = false } = {}) => {
+  const normalized = { ...data }
+  const hasLatitude = data.latitud !== undefined
+  const hasLongitude = data.longitud !== undefined
+
+  if (requireCoordinates || hasLatitude || hasLongitude) {
+    const latitude = Number(data.latitud)
+    const longitude = Number(data.longitud)
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+        !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      return { error: 'Selecciona una ubicación válida en el mapa' }
+    }
+    normalized.latitud = latitude
+    normalized.longitud = longitude
+  }
+
+  if (data.codigo_postal !== undefined) {
+    const postalCode = String(data.codigo_postal).trim()
+    if (postalCode && !/^\d{5}$/.test(postalCode)) {
+      return { error: 'El código postal debe contener 5 dígitos' }
+    }
+    normalized.codigo_postal = postalCode || null
+  }
+
+  return { data: normalized }
+}
+
 const toMobileListItem = (property) => {
   const images = normalizeImages(property.imagenes)
 
@@ -71,6 +98,8 @@ const toMobileDetail = (property) => {
     location: {
       address: property.direccion,
       city: property.ciudad,
+      neighborhood: property.colonia,
+      postalCode: property.codigo_postal,
       lat: property.latitud !== null ? Number(property.latitud) : null,
       lng: property.longitud !== null ? Number(property.longitud) : null
     },
@@ -89,8 +118,11 @@ const createProperty = async (req, res) => {
 
   try {
 
+    const location = normalizeLocationFields(req.body, { requireCoordinates: true })
+    if (location.error) return res.status(400).json({ message: location.error })
+
     const propertyData = {
-      ...req.body,
+      ...location.data,
       propietario_id: req.user.id
     }
 
@@ -200,7 +232,10 @@ const searchProperties = async (req, res) => {
   try {
 
     const filters = {
+      ubicacion: req.query.ubicacion,
       ciudad: req.query.ciudad,
+      colonia: req.query.colonia,
+      codigo_postal: req.query.codigo_postal,
       tipo: req.query.tipo,
       precio_min: req.query.precio_min,
       precio_max: req.query.precio_max
@@ -284,7 +319,10 @@ const updateMyProperty = async (req, res) => {
 
     const ownerId = req.user.id
 
-    const updated = await Property.updateByIdAndOwner(propertyId, ownerId, req.body)
+    const location = normalizeLocationFields(req.body)
+    if (location.error) return res.status(400).json({ message: location.error })
+
+    const updated = await Property.updateByIdAndOwner(propertyId, ownerId, location.data)
 
     if (!updated) {
       return res.status(404).json({ message: 'Propiedad no encontrada o sin cambios' })
