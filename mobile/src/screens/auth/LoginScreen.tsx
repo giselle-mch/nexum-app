@@ -46,7 +46,8 @@ export default function LoginScreen({ navigation }: any) {
 
     if (data?.token) {
       await login(data.token, data.user ?? null);
-      navigation.replace("Map");
+      const isLandlord = data.user?.rol === "arrendador" || data.user?.rol === "admin";
+      navigation.replace(isLandlord ? "LandlordDashboard" : "Map");
       return;
     }
 

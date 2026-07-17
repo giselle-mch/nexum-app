@@ -29,7 +29,7 @@ export default function AppNavigator() {
 
   useEffect(() => {
     const hydrateUserFromToken = async () => {
-      if (!token || user) return;
+      if (!token) return;
 
       try {
         const response = await api("/users/profile");
@@ -42,21 +42,18 @@ export default function AppNavigator() {
     };
 
     hydrateUserFromToken();
-  }, [token, user, setUser]);
+  }, [token, setUser]);
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        initialRouteName={
+          token ? (canManageProperties ? "LandlordDashboard" : "Map") : "Login"
+        }
+        screenOptions={{ headerShown: false }}
+      >
         {token ? (
           <>
-            <Stack.Screen name="Map" component={MapScreen} />
-            <Stack.Screen name="List" component={PropertyListScreen} />
-            <Stack.Screen name="Detail" component={PropertyDetailScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="Conversations" component={ConversationListScreen} />
-            <Stack.Screen name="Conversation" component={ConversationScreen} />
-            <Stack.Screen name="Payments" component={PaymentListScreen} />
-            <Stack.Screen name="CreatePayment" component={CreatePaymentScreen} />
             {canManageProperties ? (
               <>
                 <Stack.Screen
@@ -70,6 +67,14 @@ export default function AppNavigator() {
                 />
               </>
             ) : null}
+            <Stack.Screen name="Map" component={MapScreen} />
+            <Stack.Screen name="List" component={PropertyListScreen} />
+            <Stack.Screen name="Detail" component={PropertyDetailScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Conversations" component={ConversationListScreen} />
+            <Stack.Screen name="Conversation" component={ConversationScreen} />
+            <Stack.Screen name="Payments" component={PaymentListScreen} />
+            <Stack.Screen name="CreatePayment" component={CreatePaymentScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
