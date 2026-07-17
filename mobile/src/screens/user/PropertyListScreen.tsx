@@ -137,7 +137,7 @@ export default function PropertyListScreen({ navigation }: any) {
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
-                placeholder="Mín"
+                placeholder="Precio mínimo"
                 value={minPrice}
                 onChangeText={setMinPrice}
                 keyboardType="numeric"
@@ -151,7 +151,7 @@ export default function PropertyListScreen({ navigation }: any) {
                 }}
               />
               <TextInput
-                placeholder="Máx"
+                placeholder="Precio máximo"
                 value={maxPrice}
                 onChangeText={setMaxPrice}
                 keyboardType="numeric"
