@@ -193,12 +193,6 @@ const Property = {
     const values = []
     let index = 1
 
-    if (filters.ubicacion) {
-        query += ` AND (p.direccion ILIKE $${index} OR p.ciudad ILIKE $${index} OR p.colonia ILIKE $${index} OR p.codigo_postal ILIKE $${index})`
-        values.push(`%${filters.ubicacion.trim()}%`)
-        index++
-    }
-
     if (filters.ciudad) {
         query += ` AND p.ciudad ILIKE $${index}`
         values.push(`%${filters.ciudad}%`)

@@ -232,7 +232,6 @@ const searchProperties = async (req, res) => {
   try {
 
     const filters = {
-      ubicacion: req.query.ubicacion,
       ciudad: req.query.ciudad,
       colonia: req.query.colonia,
       codigo_postal: req.query.codigo_postal,

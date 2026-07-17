@@ -17,12 +17,10 @@ type PropertyListItem = {
   distanceKm?: number;
 };
 
-export default function PropertyListScreen({ navigation, route }: any) {
+export default function PropertyListScreen({ navigation }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const [properties, setProperties] = useState<PropertyListItem[]>([]);
-  const [locationQuery, setLocationQuery] = useState(route.params?.locationQuery || "");
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [city, setCity] = useState("");
   const [type, setType] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
@@ -33,7 +31,7 @@ export default function PropertyListScreen({ navigation, route }: any) {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    fetchProperties(Boolean(route.params?.locationQuery));
+    fetchProperties();
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 350,
@@ -48,7 +46,6 @@ export default function PropertyListScreen({ navigation, route }: any) {
 
       const endpoint = withFilters ? "/properties/search" : "/properties";
       const data = await api(endpoint, "GET", undefined, {
-        ubicacion: locationQuery,
         ciudad: city,
         tipo: type,
         colonia: neighborhood,
@@ -99,29 +96,6 @@ export default function PropertyListScreen({ navigation, route }: any) {
             }}
           >
             <TextInput
-              placeholder="Dirección, colonia o código postal"
-              value={locationQuery}
-              onChangeText={setLocationQuery}
-              onSubmitEditing={() => fetchProperties(true)}
-              style={{
-                borderWidth: 1,
-                borderColor: COLORS.border,
-                padding: 10,
-                borderRadius: 10,
-                backgroundColor: COLORS.white,
-              }}
-            />
-            <TouchableOpacity
-              onPress={() => setAdvancedOpen((current) => !current)}
-              style={{ paddingVertical: 5, alignItems: "center" }}
-            >
-              <Text style={{ color: COLORS.primary, fontWeight: "700" }}>
-                {advancedOpen ? "Ocultar búsqueda avanzada" : "Búsqueda avanzada"}
-              </Text>
-            </TouchableOpacity>
-            {advancedOpen ? (
-              <>
-            <TextInput
               placeholder="Ciudad"
               value={city}
               onChangeText={setCity}
@@ -161,8 +135,6 @@ export default function PropertyListScreen({ navigation, route }: any) {
                 style={{ width: 130, borderWidth: 1, borderColor: COLORS.border, padding: 10, borderRadius: 10, backgroundColor: COLORS.white }}
               />
             </View>
-              </>
-            ) : null}
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
                 placeholder="Mín"
@@ -208,7 +180,6 @@ export default function PropertyListScreen({ navigation, route }: any) {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
-                  setLocationQuery("");
                   setCity("");
                   setType("");
                   setNeighborhood("");
@@ -247,7 +218,7 @@ export default function PropertyListScreen({ navigation, route }: any) {
             ) : null
           }
           onRefresh={() =>
-            fetchProperties(locationQuery !== "" || city !== "" || type !== "" || neighborhood !== "" || postalCode !== "" || minPrice !== "" || maxPrice !== "")
+            fetchProperties(city !== "" || type !== "" || neighborhood !== "" || postalCode !== "" || minPrice !== "" || maxPrice !== "")
           }
           refreshing={loading}
           renderItem={({ item }) => (
