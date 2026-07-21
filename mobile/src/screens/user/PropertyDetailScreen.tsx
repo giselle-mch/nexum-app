@@ -13,6 +13,8 @@ import { api, toAssetUrl } from "../../services/api";
 import { COLORS } from "../../constants/colors";
 import { normalizePhoneToE164, toWhatsAppDigits } from "../../utils/phone";
 import { useAuthStore } from "../../store/authStore";
+import { logAppError } from "../../utils/debug";
+import BackButton from "../../components/BackButton";
 
 type PropertyDetail = {
   id: number;
@@ -63,6 +65,7 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
         );
       setIsFavorite(isSaved);
     } catch (error) {
+      logAppError("PropertyDetailScreen.load", error, { propertyId: id });
       Alert.alert(
         "Error",
         error instanceof Error ? error.message : "No fue posible cargar el inmueble"
@@ -72,7 +75,11 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
 
   if (!property) return null;
 
-  const coverImage = toAssetUrl(property.images?.[0]) ?? "https://via.placeholder.com/300";
+  const validImages = (property.images ?? [])
+    .map((image) => toAssetUrl(image))
+    .filter((image): image is string => Boolean(image));
+
+  const coverImage = validImages[0] ?? null;
 
   const onToggleFavorite = async () => {
     if (!property) return;
@@ -88,6 +95,10 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
         setIsFavorite(true);
       }
     } catch (error) {
+      logAppError("PropertyDetailScreen.onToggleFavorite", error, {
+        propertyId: property.id,
+        action: isFavorite ? "remove" : "add",
+      });
       Alert.alert(
         "Error",
         error instanceof Error
@@ -151,6 +162,9 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
       const conversation = await api("/conversations", "POST", { propertyId: property.id });
       navigation.navigate("Conversation", { id: conversation.id });
     } catch (error) {
+      logAppError("PropertyDetailScreen.onStartConversation", error, {
+        propertyId: property.id,
+      });
       Alert.alert("Error", error instanceof Error ? error.message : "No fue posible iniciar la conversación");
     }
   };
@@ -158,20 +172,30 @@ export default function PropertyDetailScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <ScrollView style={{ flex: 1 }}>
-        <Image source={{ uri: coverImage }} style={{ width: "100%", height: 280 }} />
+        <View style={{ paddingHorizontal: 12, paddingTop: 12 }}>
+          <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Map"))} />
+        </View>
 
-        {property.images?.length > 1 ? (
+        {coverImage ? (
+          <Image source={{ uri: coverImage }} style={{ width: "100%", height: 280 }} />
+        ) : (
+          <View style={{ width: "100%", height: 280, backgroundColor: COLORS.lightGray, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: COLORS.secondary, fontWeight: "700" }}>Sin imagen disponible</Text>
+          </View>
+        )}
+
+        {validImages.length > 1 ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ marginTop: 10 }}
             contentContainerStyle={{ paddingHorizontal: 10, gap: 8 }}
           >
-            {property.images.slice(1).map((image, index) => (
+            {validImages.slice(1).map((image, index) => (
               <Image
                 key={`${image}-${index}`}
-                source={{ uri: toAssetUrl(image) ?? "https://via.placeholder.com/300" }}
-                style={{ width: 116, height: 90, borderRadius: 10 }}
+                source={{ uri: image }}
+                style={{ width: 116, height: 90, borderRadius: 10, backgroundColor: COLORS.lightGray }}
               />
             ))}
           </ScrollView>

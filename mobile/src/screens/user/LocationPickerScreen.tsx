@@ -1,4 +1,5 @@
-﻿import { useMemo, useRef, useState } from "react";
+﻿import BackButton from "../../components/BackButton";
+import { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -39,6 +40,7 @@ type SearchResult = {
   lng: number;
   address?: string;
   city?: string;
+  state?: string;
   neighborhood?: string;
   postalCode?: string;
 };
@@ -74,12 +76,14 @@ export default function LocationPickerScreen({ route, navigation }: any) {
   const [selectedDetails, setSelectedDetails] = useState<{
     address?: string;
     city?: string;
+    state?: string;
     neighborhood?: string;
     postalCode?: string;
   }>({});
 
   const toAddressDetails = (address?: Record<string, string>) => ({
     city: address?.city || address?.town || address?.municipality || address?.village,
+    state: address?.state || address?.county,
     neighborhood: address?.neighbourhood || address?.suburb || address?.quarter,
     postalCode: address?.postcode,
   });
@@ -241,6 +245,8 @@ export default function LocationPickerScreen({ route, navigation }: any) {
             elevation: 5,
           }}
         >
+          <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("PropertyForm"))} />
+
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TextInput
               placeholder="Dirección, colonia o código postal"

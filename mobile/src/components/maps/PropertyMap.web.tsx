@@ -129,9 +129,9 @@ export default function PropertyMap({
         <MapEvents onRegionChangeComplete={onRegionChangeComplete} />
         <FitMarkers properties={properties} fitToMarkersToken={fitToMarkersToken} />
 
-        {properties.map((property) => (
+        {properties.map((property, index) => (
           <Marker
-            key={property.id}
+            key={`${Number.isFinite(property.id) ? property.id : `tmp-${index}`}-${property.latitud}-${property.longitud}`}
             position={[Number(property.latitud), Number(property.longitud)]}
             icon={propertyIcon}
             eventHandlers={{

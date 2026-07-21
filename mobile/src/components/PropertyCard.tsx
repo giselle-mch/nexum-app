@@ -17,7 +17,7 @@ interface PropertyCardProps {
 }
 
 export default function PropertyCard({ property, onPress }: PropertyCardProps) {
-  const imageUri = toAssetUrl(property.thumbnail) ?? "https://via.placeholder.com/300";
+  const imageUri = toAssetUrl(property.thumbnail);
 
   return (
     <TouchableOpacity
@@ -36,7 +36,13 @@ export default function PropertyCard({ property, onPress }: PropertyCardProps) {
       }}
     >
       <View>
-        <Image source={{ uri: imageUri }} style={{ width: "100%", height: 186 }} />
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={{ width: "100%", height: 186 }} />
+        ) : (
+          <View style={{ width: "100%", height: 186, backgroundColor: COLORS.lightGray, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: COLORS.secondary, fontWeight: "700" }}>Sin imagen</Text>
+          </View>
+        )}
 
         <View
           style={{

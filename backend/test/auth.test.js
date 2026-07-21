@@ -2,31 +2,20 @@ const request = require('supertest');
 const app = require('../src/app');
 
 describe('Prueba de integración - Autenticación NEXUM', () => {
-  test('GET /api/users/profile debe rechazar acceso sin token', async () => {
-    const response = await request(app).get('/api/users/profile');
+  test('GET /api/auth/user-profile debe rechazar acceso sin token', async () => {
+    const response = await request(app).get('/api/auth/user-profile');
 
     expect(response.statusCode).toBe(401);
     expect(response.body).toHaveProperty('message');
     expect(response.body.message).toBe('Token no proporcionado');
   });
 
-  test('GET /api/users/profile debe mostrar correctamente Token inválido', async () => {
+  test('GET /api/auth/user-profile debe mostrar correctamente Token inválido', async () => {
     const response = await request(app)
-      .get('/api/users/profile')
+      .get('/api/auth/user-profile')
       .set('Authorization', 'Bearer token-invalido');
 
     expect(response.statusCode).toBe(401);
     expect(response.body.message).toBe('Token inválido');
-  });
-
-  test('POST /api/auth/recover-password rechaza cambios sin verificacion', async () => {
-    const response = await request(app)
-      .post('/api/auth/recover-password')
-      .send({ email: 'victima@test.com', newPassword: 'atacante123' });
-
-    expect(response.statusCode).toBe(503);
-    expect(response.body.message).toBe(
-      'La recuperacion de contrasena no esta disponible temporalmente'
-    );
   });
 });

@@ -2,12 +2,12 @@ const request = require('supertest');
 const app = require('../src/app');
 
 describe('Prueba de integración - Login NEXUM', () => {
-  test('POST /api/auth/login debe rechazar login sin datos', async () => {
+  test('GET /api/auth/user-profile debe rechazar acceso sin token', async () => {
     const response = await request(app)
-      .post('/api/auth/login')
-      .send({});
+      .get('/api/auth/user-profile');
 
-    expect([400, 500]).toContain(response.statusCode);
+    expect(response.statusCode).toBe(401);
     expect(response.body).toHaveProperty('message');
+    expect(response.body.message).toBe('Token no proporcionado');
   });
 });

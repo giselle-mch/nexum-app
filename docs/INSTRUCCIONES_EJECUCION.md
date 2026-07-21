@@ -1,215 +1,83 @@
-# Instrucciones para ejecutar NEXUM
+# Instrucciones de Ejecucion (Firebase-only)
 
-Esta guia resume que archivos locales se necesitan, que se debe subir a Git y como arrancar backend y app movil sin errores de conexion.
+Este proyecto corre sin PostgreSQL.
 
-## 1. Archivos locales que deben existir
+## Requisitos
 
-Estos archivos son necesarios para correr el proyecto en tu computadora, pero no deben subirse a Git porque tienen datos locales o secretos.
+- Node.js 20 o 22
+- npm 10+
+- Proyecto Firebase activo (`nexum-ba05a`)
+- Reglas de Firestore y Storage desplegadas
 
-### Backend
+## 1) Configurar Backend (opcional)
 
-Crear este archivo:
+El backend existe para utilidades de autenticacion/perfil con Firebase Admin. No usa PostgreSQL.
 
-```text
-backend/.env
-```
-
-Contenido ejemplo:
+Crea `backend/.env` con:
 
 ```env
 PORT=3000
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=nexum
-DB_USER=postgres
-DB_PASSWORD=*****
-JWT_SECRET=*****
+FIREBASE_SERVICE_ACCOUNT_PATH=backend/keys/firebase-service-account.json
+FIREBASE_DATABASE_URL=https://nexum-ba05a-default-rtdb.firebaseio.com
 ```
 
-Si falta `DB_PASSWORD`, el backend puede fallar con:
+Guarda tu llave en:
 
-```text
-client password must be a string
-```
+- `backend/keys/firebase-service-account.json`
 
-### Mobile
+## 2) Configurar Mobile (requerido)
 
-Crear este archivo:
-
-```text
-mobile/.env
-```
-
-Contenido ejemplo:
+Crea `mobile/.env`:
 
 ```env
-# Opcional. Si se omite o queda vacía, la app detecta la IP del servidor Expo.
-# Úsala únicamente para un backend remoto fijo.
 EXPO_PUBLIC_API_URL=
 ```
 
-En desarrollo no necesitas escribir una IP: la app toma automáticamente la que
-muestra Expo en la terminal. Si necesitas conectar a un backend remoto fijo,
-define su URL completa. Por ejemplo:
+## 3) Instalar dependencias
 
-```text
-Metro waiting on exp://192.168.100.27:8081
-```
-
-Entonces `mobile/.env` debe ser:
-
-```env
-EXPO_PUBLIC_API_URL=http://192.168.100.27:3000
-```
-
-## 2. Archivos que si se suben a Git
-
-Estos si deben estar en el repositorio:
-
-```text
-backend/.env.example
-mobile/.env.example
-backend/src/config/env.js
-backend/server.js
-backend/src/config/database.js
-mobile/src/services/api.ts
-mobile/src/components/maps/
-mobile/src/screens/user/MapScreen.tsx
-mobile/src/screens/user/LocationPickerScreen.tsx
-mobile/tsconfig.json
-mobile/package.json
-mobile/package-lock.json
-```
-
-Los `.env.example` solo son plantillas. No deben tener contrasenas reales.
-
-## 3. Archivos que no se suben a Git
-
-No subir:
-
-```text
-backend/.env
-mobile/.env
-node_modules/
-mobile/node_modules/
-backend/node_modules/
-dist/
-dist-check/
-```
-
-## 4. Como arrancar el backend
-
-Desde la carpeta del backend:
-
-```powershell
+```bash
 cd backend
 npm install
+
+cd ../mobile
+npm install
+```
+
+## 4) Ejecutar
+
+Terminal 1 (backend opcional):
+
+```bash
+cd backend
 npm run dev
 ```
 
-Debe salir algo como:
+Terminal 2 (mobile):
 
-```text
-Conectado a PostgreSQL
-Servidor Nexum corriendo en puerto 3000
-```
-
-Para probarlo:
-
-```text
-http://localhost:3000/health
-```
-
-Debe responder:
-
-```json
-{"status":"ok"}
-```
-
-## 5. Como arrancar la app movil
-
-Desde la carpeta mobile:
-
-```powershell
+```bash
 cd mobile
-npm install
-npx expo start -c
+npm start
 ```
 
-Usar `-c` limpia la cache de Expo. Es importante cuando cambiaste `.env` o la IP del backend.
+## 5) Validaciones rapidas
 
-## 6. Error de 10.0.2.2
+```bash
+cd mobile
+npm run check:all
 
-Si la app dice:
-
-```text
-No se pudo conectar al backend (http://10.0.2.2:3000)
+cd ../backend
+npm run lint
+npm test
 ```
 
-Significa que no esta leyendo `mobile/.env` o que Expo tiene cache vieja.
+## 6) Deploy de reglas Firebase
 
-Solucion:
-
-1. Revisar que exista `mobile/.env`.
-2. Confirmar que tenga la IP correcta:
-
-```env
-EXPO_PUBLIC_API_URL=http://TU_IP_LOCAL:3000
+```bash
+npx --yes firebase-tools@13.32.0 deploy --only firestore:rules,storage --project nexum-ba05a
 ```
 
-3. Reiniciar Expo:
+## Notas
 
-```powershell
-npx expo start -c
-```
-
-4. Cerrar Expo Go completamente en el celular y volver a escanear el QR.
-
-## 7. Error de react-native-maps en web
-
-Si al abrir web sale un error parecido a:
-
-```text
-Importing native-only module "react-native/Libraries/Utilities/codegenNativeCommands" on web
-```
-
-Significa que una pantalla web esta importando directamente `react-native-maps`.
-
-La solucion correcta es usar componentes separados:
-
-```text
-PropertyMap.web.tsx
-PropertyMap.native.tsx
-LocationPickerMap.web.tsx
-LocationPickerMap.native.tsx
-```
-
-En web se usa Leaflet y en Android/iOS se usa `react-native-maps`.
-
-## 8. Antes de hacer push
-
-Revisar estado:
-
-```powershell
-git status
-```
-
-Agregar solo lo que pertenece al cambio:
-
-```powershell
-git add archivo1 archivo2
-git commit -m "Mensaje claro del cambio"
-git push
-```
-
-No usar `git add .` si hay archivos modificados que no sabes de donde salieron.
-
-## 9. Checklist rapido
-
-- Backend tiene `backend/.env`.
-- Mobile tiene `mobile/.env`.
-- La IP de `mobile/.env` coincide con la IP que muestra Expo.
-- PostgreSQL esta encendido.
-- Backend responde en `/health`.
-- Expo se reinicio con `npx expo start -c`.
-- No se suben `.env` reales a Git.
+- La app usa Firebase Auth + Firestore.
+- Las imagenes se manejan por links persistidos (sin depender de PostgreSQL).
+- No pegues credenciales en chats o logs. Rotar llaves si se exponen.

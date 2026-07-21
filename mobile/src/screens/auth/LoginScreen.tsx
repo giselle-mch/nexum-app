@@ -1,11 +1,58 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Animated } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Animated, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../../constants/colors";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import { auth } from "../../services/firebase";
+import { logAppError } from "../../utils/debug";
 
 type AuthMode = "login" | "register" | "recovery";
+
+const toAuthMessage = (error: unknown, fallback: string) => {
+  const typedError = error as { code?: string; message?: string };
+  const code = String(typedError?.code ?? "");
+
+  if (code.includes("auth/email-already-in-use")) {
+    return "Ese correo ya está registrado. Inicia sesión o recupera tu contraseña.";
+  }
+
+  if (code.includes("auth/invalid-email")) {
+    return "El correo no tiene un formato válido.";
+  }
+
+  if (code.includes("auth/weak-password")) {
+    return "La contraseña es débil. Usa al menos 6 caracteres.";
+  }
+
+  if (code.includes("auth/operation-not-allowed")) {
+    return "El registro por correo/contraseña no está habilitado en Firebase Auth.";
+  }
+
+  if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password")) {
+    return "Correo o contraseña incorrectos.";
+  }
+
+  if (code.includes("auth/user-not-found")) {
+    return "No existe una cuenta con ese correo.";
+  }
+
+  if (code.includes("auth/too-many-requests")) {
+    return "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.";
+  }
+
+  if (code.includes("unavailable") || code.includes("network-request-failed")) {
+    return "No se pudo conectar con Firebase. Revisa tu red y vuelve a intentar.";
+  }
+
+  const message = String(typedError?.message ?? "").trim();
+  return message || fallback;
+};
 
 export default function LoginScreen({ navigation }: any) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -31,27 +78,27 @@ export default function LoginScreen({ navigation }: any) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 380,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== "web",
       }),
       Animated.timing(riseAnim, {
         toValue: 0,
         duration: 380,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== "web",
       }),
     ]).start();
   }, [fadeAnim, riseAnim]);
 
   const doLogin = async () => {
-    const data = await api("/auth/login", "POST", { email, password });
+    const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+    const idToken = await userCredential.user.getIdToken();
+    const userData = await api("/auth/user-profile", "GET");
 
-    if (data?.token) {
-      await login(data.token, data.user ?? null);
-      const isLandlord = data.user?.rol === "arrendador" || data.user?.rol === "admin";
-      navigation.replace(isLandlord ? "LandlordDashboard" : "Map");
+    if (idToken) {
+      await login(idToken, userData?.user ?? null);
       return;
     }
 
-    throw new Error("Credenciales incorrectas");
+    throw new Error("No se pudo obtener el token de autenticación");
   };
 
   const handleLogin = async () => {
@@ -59,7 +106,8 @@ export default function LoginScreen({ navigation }: any) {
       setLoading(true);
       await doLogin();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "No fue posible iniciar sesión");
+      logAppError("LoginScreen.handleLogin", error, { email });
+      alert(toAuthMessage(error, "No fue posible iniciar sesión"));
     } finally {
       setLoading(false);
     }
@@ -73,55 +121,49 @@ export default function LoginScreen({ navigation }: any) {
 
     try {
       setLoading(true);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const idToken = await userCredential.user.getIdToken();
+
       await api("/auth/register", "POST", {
+        uid: userCredential.user.uid,
         nombre: name.trim(),
         email: email.trim(),
-        password,
         telefono: phone.trim(),
         rol: selectedRole,
       });
-      await doLogin();
+
+      const userData = await api("/auth/user-profile", "GET");
+
+      await login(idToken, {
+        ...(userData?.user ?? {}),
+        nombre: userData?.user?.nombre ?? name.trim(),
+        email: userData?.user?.email ?? email.trim(),
+        telefono: userData?.user?.telefono ?? phone.trim(),
+        rol: userData?.user?.rol ?? selectedRole,
+      });
     } catch (error) {
-      alert(error instanceof Error ? error.message : "No fue posible registrarse");
+      logAppError("LoginScreen.handleRegister", error, { email, selectedRole });
+      alert(toAuthMessage(error, "No fue posible registrarse"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleRecoverPassword = async () => {
-    if (!email.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-      alert("Completa correo, nueva contraseña y confirmación");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      alert("Las contraseñas no coinciden");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      alert("La nueva contraseña debe tener al menos 6 caracteres");
+    if (!email.trim()) {
+      alert("Ingresa tu correo");
       return;
     }
 
     try {
       setLoading(true);
-      await api("/auth/recover-password", "POST", {
-        email: email.trim(),
-        newPassword,
-      });
-
-      alert("Contraseña actualizada. Ahora inicia sesión con tu nueva contraseña.");
+      await sendPasswordResetEmail(auth, email.trim());
+      alert("Se envió un correo para restablecer tu contraseña. Revisa tu bandeja de entrada.");
       setMode("login");
       setPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
     } catch (error) {
-      alert(
-        error instanceof Error
-          ? error.message
-          : "No fue posible recuperar la contraseña"
-      );
+      logAppError("LoginScreen.handleRecoverPassword", error, { email });
+      alert(toAuthMessage(error, "No fue posible recuperar la contraseña"));
     } finally {
       setLoading(false);
     }
@@ -251,20 +293,9 @@ export default function LoginScreen({ navigation }: any) {
 
           {isRecoveryMode ? (
             <>
-              <TextInput
-                placeholder="Nueva contraseña"
-                secureTextEntry
-                value={newPassword}
-                onChangeText={setNewPassword}
-                style={{ borderWidth: 1, marginBottom: 10, padding: 11, borderColor: COLORS.border, borderRadius: 10 }}
-              />
-              <TextInput
-                placeholder="Confirmar nueva contraseña"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                style={{ borderWidth: 1, marginBottom: 14, padding: 11, borderColor: COLORS.border, borderRadius: 10 }}
-              />
+              <Text style={{ color: COLORS.secondary, marginBottom: 14 }}>
+                Te enviaremos un correo para restablecer tu contraseña.
+              </Text>
             </>
           ) : (
             <TextInput
@@ -295,12 +326,12 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={{ color: "white", fontWeight: "700" }}>
               {loading
                 ? isRecoveryMode
-                  ? "Actualizando..."
+                  ? "Enviando..."
                   : isRegisterMode
                     ? "Creando cuenta..."
                     : "Entrando..."
                 : isRecoveryMode
-                  ? "Actualizar contraseña"
+                  ? "Enviar correo de recuperación"
                   : isRegisterMode
                     ? "Crear cuenta"
                     : "Entrar"}
@@ -327,7 +358,7 @@ export default function LoginScreen({ navigation }: any) {
 
         <TouchableOpacity
           onPress={() => {
-            alert("La recuperación de contraseña no está disponible temporalmente.");
+            setMode("recovery");
           }}
           disabled={loading}
           style={{ marginTop: 10, alignItems: "center" }}

@@ -3,6 +3,8 @@ import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../services/api";
 import { COLORS } from "../../constants/colors";
+import { logAppError } from "../../utils/debug";
+import BackButton from "../../components/BackButton";
 
 export default function CreatePaymentScreen({ route, navigation }: any) {
   const { conversationId, propertyTitle } = route.params;
@@ -26,13 +28,18 @@ export default function CreatePaymentScreen({ route, navigation }: any) {
         { text: "Aceptar", onPress: () => navigation.replace("Payments") },
       ]);
     } catch (error) {
+      logAppError("CreatePaymentScreen.create", error, {
+        conversationId,
+        amount,
+        dueDate,
+      });
       Alert.alert("Error", error instanceof Error ? error.message : "No fue posible crear el cobro");
     } finally { setLoading(false); }
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper, padding: 18 }}>
-      <TouchableOpacity onPress={() => navigation.goBack()}><Text style={{ fontSize: 22 }}>‹ Volver</Text></TouchableOpacity>
+      <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Payments"))} />
       <Text style={{ marginTop: 24, fontSize: 24, fontWeight: "800", color: COLORS.ink }}>Crear cobro de renta</Text>
       <Text style={{ marginTop: 8, color: COLORS.secondary }}>{propertyTitle}</Text>
       <View style={{ marginTop: 20, padding: 14, borderRadius: 12, backgroundColor: "#FFF4CE" }}>

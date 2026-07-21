@@ -1,34 +1,52 @@
-const pool = require('../config/database')
+const { db } = require('../config/firebase')
 
 const Image = {
+  async add(propertyId, imageUrl) {
+    const propertyRef = db.collection('properties').doc(String(propertyId))
 
-  async add(property_id, image_url) {
+    const result = await db.runTransaction(async (transaction) => {
+      const propertyDoc = await transaction.get(propertyRef)
+      if (!propertyDoc.exists) {
+        throw new Error('PROPERTY_NOT_FOUND')
+      }
 
-    const query = `
-      INSERT INTO property_images(property_id, image_url)
-      VALUES($1,$2)
-      RETURNING *
-    `
+      const propertyData = propertyDoc.data() || {}
+      const currentImages = Array.isArray(propertyData.imagenes)
+        ? propertyData.imagenes.filter(Boolean)
+        : []
 
-    const values = [property_id, image_url]
+      if (!currentImages.includes(imageUrl)) {
+        currentImages.push(imageUrl)
+      }
 
-    const result = await pool.query(query, values)
+      transaction.update(propertyRef, {
+        imagenes: currentImages,
+        updatedAt: new Date().toISOString(),
+      })
 
-    return result.rows[0]
+      return {
+        property_id: Number(propertyId),
+        image_url: imageUrl,
+      }
+    })
+
+    return result
   },
 
-  async findByProperty(property_id) {
+  async findByProperty(propertyId) {
+    const propertyDoc = await db.collection('properties').doc(String(propertyId)).get()
+    if (!propertyDoc.exists) {
+      return []
+    }
 
-    const query = `
-      SELECT * FROM property_images
-      WHERE property_id = $1
-    `
+    const data = propertyDoc.data() || {}
+    const images = Array.isArray(data.imagenes) ? data.imagenes : []
 
-    const result = await pool.query(query, [property_id])
-
-    return result.rows
-  }
-
+    return images.filter(Boolean).map((imageUrl) => ({
+      property_id: Number(propertyId),
+      image_url: imageUrl,
+    }))
+  },
 }
 
 module.exports = Image

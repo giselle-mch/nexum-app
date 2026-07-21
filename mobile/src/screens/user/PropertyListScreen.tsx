@@ -1,11 +1,13 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { View, FlatList, TextInput, TouchableOpacity, Text, Animated } from "react-native";
+import { View, FlatList, TextInput, TouchableOpacity, Text, Animated, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../services/api";
 import PropertyCard from "../../components/PropertyCard";
 import { COLORS } from "../../constants/colors";
 import SectionHeader from "../../components/SectionHeader";
 import StatePanel from "../../components/StatePanel";
+import { logAppError } from "../../utils/debug";
+import BackButton from "../../components/BackButton";
 
 type PropertyListItem = {
   id: number;
@@ -35,7 +37,7 @@ export default function PropertyListScreen({ navigation }: any) {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 350,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   }, []);
 
@@ -55,6 +57,15 @@ export default function PropertyListScreen({ navigation }: any) {
       });
       setProperties(Array.isArray(data) ? data : []);
     } catch (error) {
+      logAppError("PropertyListScreen.fetchProperties", error, {
+        withFilters,
+        city,
+        type,
+        neighborhood,
+        postalCode,
+        minPrice,
+        maxPrice,
+      });
       setErrorMessage(
         error instanceof Error ? error.message : "No fue posible cargar inmuebles"
       );
@@ -79,6 +90,11 @@ export default function PropertyListScreen({ navigation }: any) {
             elevation: 5,
           }}
         >
+          <BackButton
+            onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Map"))}
+            light
+          />
+
           <SectionHeader
             title="Explorar Inmuebles"
             subtitle="Encuentra tu próximo hogar con filtros inteligentes"

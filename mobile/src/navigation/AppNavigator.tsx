@@ -1,6 +1,7 @@
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 import LoginScreen from "../screens/auth/LoginScreen";
 import MapScreen from "../screens/user/MapScreen";
@@ -16,20 +17,62 @@ import ConversationListScreen from "../screens/user/ConversationListScreen";
 import ConversationScreen from "../screens/user/ConversationScreen";
 import PaymentListScreen from "../screens/user/PaymentListScreen";
 import CreatePaymentScreen from "../screens/user/CreatePaymentScreen";
+import { auth } from "../services/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 const Stack = createNativeStackNavigator();
+const navigationRef = createNavigationContainerRef();
 
 export default function AppNavigator() {
-  const { token, user, loadSession, setUser } = useAuthStore();
-  const canManageProperties = user?.rol === "arrendador" || user?.rol === "admin";
+  const {
+    token,
+    user,
+    firebaseUser,
+    loadSession,
+    setUser,
+    setFirebaseUser,
+    clearSession,
+  } = useAuthStore();
+  const [authReady, setAuthReady] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [navReady, setNavReady] = useState(false);
+  const previousAuthRef = useRef(false);
+  const bootRouteSettledRef = useRef(false);
+  const isAuthenticated = Boolean(token && firebaseUser);
+  const homeRoute = "Map";
 
   useEffect(() => {
-    loadSession();
+    const init = async () => {
+      await loadSession();
+      setSessionReady(true);
+    };
+
+    init();
   }, []);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setFirebaseUser(firebaseUser);
+      setAuthReady(true);
+    });
+
+    return unsubscribe;
+  }, [setFirebaseUser]);
+
+  useEffect(() => {
+    const syncStaleSession = async () => {
+      if (!authReady || !sessionReady) return;
+      if (token && !firebaseUser) {
+        await clearSession();
+      }
+    };
+
+    syncStaleSession();
+  }, [authReady, sessionReady, token, firebaseUser, clearSession]);
+
+  useEffect(() => {
     const hydrateUserFromToken = async () => {
-      if (!token) return;
+      if (!isAuthenticated) return;
 
       try {
         const response = await api("/users/profile");
@@ -42,31 +85,72 @@ export default function AppNavigator() {
     };
 
     hydrateUserFromToken();
-  }, [token, setUser]);
+  }, [isAuthenticated, setUser]);
+
+  useEffect(() => {
+    if (!authReady || !sessionReady || !navReady || !navigationRef.isReady()) return;
+
+    const wasAuthenticated = previousAuthRef.current;
+
+    if (isAuthenticated) {
+      const currentRoute = navigationRef.getCurrentRoute()?.name;
+      const shouldNormalizeBootRoute = !bootRouteSettledRef.current;
+      const shouldNormalizeOnAuthTransition = !wasAuthenticated;
+      const shouldNormalizeRoleRoute = currentRoute === "Profile" || currentRoute === "Login";
+
+      if (shouldNormalizeBootRoute || shouldNormalizeOnAuthTransition || shouldNormalizeRoleRoute) {
+        navigationRef.resetRoot({
+          index: 0,
+          routes: [{ name: homeRoute }],
+        } as never);
+        bootRouteSettledRef.current = true;
+      }
+    }
+
+    if (!isAuthenticated && wasAuthenticated) {
+      navigationRef.resetRoot({
+        index: 0,
+        routes: [{ name: "Login" }],
+      } as never);
+      bootRouteSettledRef.current = false;
+    }
+
+    previousAuthRef.current = isAuthenticated;
+  }, [authReady, sessionReady, navReady, isAuthenticated, homeRoute]);
+
+  if (!authReady || !sessionReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        setNavReady(true);
+      }}
+    >
       <Stack.Navigator
+        key={isAuthenticated ? `auth-${homeRoute}` : "guest"}
         initialRouteName={
-          token ? (canManageProperties ? "LandlordDashboard" : "Map") : "Login"
+          isAuthenticated ? homeRoute : "Login"
         }
         screenOptions={{ headerShown: false }}
       >
-        {token ? (
+        {isAuthenticated ? (
           <>
-            {canManageProperties ? (
-              <>
-                <Stack.Screen
-                  name="LandlordDashboard"
-                  component={LandlordDashboardScreen}
-                />
-                <Stack.Screen name="PropertyForm" component={PropertyFormScreen} />
-                <Stack.Screen
-                  name="LocationPicker"
-                  component={LocationPickerScreen}
-                />
-              </>
-            ) : null}
+            <Stack.Screen
+              name="LandlordDashboard"
+              component={LandlordDashboardScreen}
+            />
+            <Stack.Screen name="PropertyForm" component={PropertyFormScreen} />
+            <Stack.Screen
+              name="LocationPicker"
+              component={LocationPickerScreen}
+            />
             <Stack.Screen name="Map" component={MapScreen} />
             <Stack.Screen name="List" component={PropertyListScreen} />
             <Stack.Screen name="Detail" component={PropertyDetailScreen} />

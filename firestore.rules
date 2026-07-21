@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userDocExists() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function currentUserId() {
+      return currentUserDoc().data.id;
+    }
+
+    function currentUserRole() {
+      return currentUserDoc().data.rol;
+    }
+
+    function canManageProperties() {
+      return userDocExists() && (currentUserRole() == 'arrendador' || currentUserRole() == 'admin');
+    }
+
+    function propertyOwnedByCurrentUser(data) {
+      return userDocExists() && (
+        (data.ownerId is string && data.ownerId == request.auth.uid) ||
+        (data.propietario_uid is string && data.propietario_uid == request.auth.uid) ||
+        (data.propietario_id == currentUserId())
+      );
+    }
+
+    function favoriteOwnedByCurrentUser(data) {
+      return userDocExists() && (
+        (data.user_uid is string && data.user_uid == request.auth.uid) ||
+        (data.user_id == currentUserId())
+      );
+    }
+
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /properties/{propertyId} {
+      allow read: if true;
+      allow create: if canManageProperties() && propertyOwnedByCurrentUser(request.resource.data);
+      allow update, delete: if propertyOwnedByCurrentUser(resource.data);
+    }
+
+    match /favorites/{favoriteId} {
+      allow read, update, delete: if favoriteOwnedByCurrentUser(resource.data);
+      allow create: if favoriteOwnedByCurrentUser(request.resource.data);
+    }
+
+    match /conversations/{conversationId} {
+      allow read, write: if userDocExists() && currentUserId() in resource.data.participants;
+      allow create: if userDocExists() && currentUserId() in request.resource.data.participants;
+
+      match /messages/{messageId} {
+        allow read: if userDocExists() && currentUserId() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow write: if userDocExists() && request.resource.data.sender_id == currentUserId();
+      }
+    }
+
+    match /payments/{paymentId} {
+      allow read, write: if userDocExists() && (
+        resource.data.client_id == currentUserId() ||
+        resource.data.landlord_id == currentUserId()
+      );
+      allow create: if userDocExists() && (
+        request.resource.data.client_id == currentUserId() ||
+        request.resource.data.landlord_id == currentUserId()
+      );
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

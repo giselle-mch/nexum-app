@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../services/api";
@@ -14,6 +15,8 @@ import { COLORS } from "../../constants/colors";
 import PropertyCard from "../../components/PropertyCard";
 import SectionHeader from "../../components/SectionHeader";
 import StatePanel from "../../components/StatePanel";
+import { logAppError } from "../../utils/debug";
+import BackButton from "../../components/BackButton";
 
 type MyProperty = {
   id: number;
@@ -36,7 +39,7 @@ export default function LandlordDashboardScreen({ navigation }: any) {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 320,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   }, []);
 
@@ -47,6 +50,7 @@ export default function LandlordDashboardScreen({ navigation }: any) {
       const response = await api("/properties/mine");
       setProperties(Array.isArray(response) ? (response as MyProperty[]) : []);
     } catch (error) {
+      logAppError("LandlordDashboardScreen.loadMyProperties", error);
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -68,6 +72,7 @@ export default function LandlordDashboardScreen({ navigation }: any) {
             await api(`/properties/mine/${propertyId}`, "DELETE");
             setProperties((prev) => prev.filter((property) => property.id !== propertyId));
           } catch (error) {
+            logAppError("LandlordDashboardScreen.onDelete", error, { propertyId });
             Alert.alert(
               "Error",
               error instanceof Error ? error.message : "No fue posible eliminar"
@@ -92,6 +97,7 @@ export default function LandlordDashboardScreen({ navigation }: any) {
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
         <View style={{ padding: 16, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.lightGray }}>
+          <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Map"))} />
           <SectionHeader
             title="Panel Arrendador"
             subtitle="Gestiona y actualiza tus publicaciones"

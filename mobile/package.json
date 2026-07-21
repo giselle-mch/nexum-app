@@ -6,7 +6,9 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "audit:routes": "node scripts/route-audit.mjs",
+    "check:all": "npm run audit:routes && npx tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -21,6 +23,7 @@
     "expo-image-picker": "~17.0.11",
     "expo-location": "~19.0.8",
     "expo-status-bar": "~3.0.9",
+    "firebase": "^10.0.0",
     "leaflet": "^1.9.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -37,6 +40,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "expo-module-scripts": "^56.0.3",
     "typescript": "~5.9.2"
   },
   "private": true

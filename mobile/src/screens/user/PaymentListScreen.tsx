@@ -5,6 +5,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { api } from "../../services/api";
 import { COLORS } from "../../constants/colors";
 import { useAuthStore } from "../../store/authStore";
+import { logAppError } from "../../utils/debug";
+import BackButton from "../../components/BackButton";
 
 type Payment = {
   id: number; client_id: number; landlord_id: number; amount: string; due_date: string;
@@ -23,9 +25,12 @@ export default function PaymentListScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     try { setItems((await api("/payments")) as Payment[]); }
-    catch (error) { Alert.alert("Error", error instanceof Error ? error.message : "No fue posible cargar los pagos"); }
+    catch (error) {
+      logAppError("PaymentListScreen.load", error, { userId: user?.id ?? null });
+      Alert.alert("Error", error instanceof Error ? error.message : "No fue posible cargar los pagos");
+    }
     finally { setLoading(false); }
-  }, []);
+  }, [user?.id]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const act = (item: Payment, action: "simulate" | "cancel") => {
@@ -33,14 +38,17 @@ export default function PaymentListScreen({ navigation }: any) {
     const message = action === "simulate" ? "Esta acción no mueve dinero real. ¿Continuar?" : "¿Cancelar este cobro?";
     Alert.alert(title, message, [{ text: "No", style: "cancel" }, { text: "Sí", onPress: async () => {
       try { await api(`/payments/${item.id}/${action}`, "POST"); await load(); }
-      catch (error) { Alert.alert("Error", error instanceof Error ? error.message : "No fue posible procesar la acción"); }
+      catch (error) {
+        logAppError("PaymentListScreen.act", error, { paymentId: item.id, action });
+        Alert.alert("Error", error instanceof Error ? error.message : "No fue posible procesar la acción");
+      }
     }}]);
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <View style={{ padding: 16, flexDirection: "row", gap: 14 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={{ fontSize: 22 }}>‹</Text></TouchableOpacity>
+        <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Profile"))} />
         <Text style={{ fontSize: 24, fontWeight: "800", color: COLORS.ink }}>Pagos de renta</Text>
       </View>
       <View style={{ marginHorizontal: 16, padding: 12, borderRadius: 12, backgroundColor: "#FFF4CE" }}>

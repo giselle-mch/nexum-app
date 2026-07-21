@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import PropertyMap from "../../components/maps/PropertyMap";
 import { api } from "../../services/api";
 import { useAuthStore } from "../../store/authStore";
+import { logAppError } from "../../utils/debug";
 
 type Region = {
   latitude: number;
@@ -67,6 +68,7 @@ export default function MapScreen({ navigation }: any) {
 
       setProperties(Array.isArray(data) ? (data as MapProperty[]) : []);
     } catch (error) {
+      logAppError("MapScreen.fetchProperties", error, { region: region ?? null });
       Alert.alert(
         "Error",
         error instanceof Error ? error.message : "No fue posible cargar el mapa"
@@ -76,7 +78,11 @@ export default function MapScreen({ navigation }: any) {
 
   const validProperties = properties.filter(
     (item): item is MapProperty & { latitud: number; longitud: number } =>
-      item.latitud !== null && item.longitud !== null
+      Number.isFinite(item.id) &&
+      item.latitud !== null &&
+      item.longitud !== null &&
+      Number.isFinite(item.latitud) &&
+      Number.isFinite(item.longitud)
   );
 
   return (

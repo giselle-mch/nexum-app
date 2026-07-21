@@ -1,7 +1,3 @@
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
-const User = require('../models/userModel')
-
 const DB_CLIENT_ROLE = 'usuario'
 
 const normalizeIncomingRole = (role) => {
@@ -22,109 +18,43 @@ const sanitizeUser = (user) => ({
   rol: toPublicRole(user.rol)
 })
 
-const register = async (req, res) => {
-
+const getUserProfile = async (req, res) => {
   try {
-
-    const { nombre, email, password, telefono, rol } = req.body
-
-    const existingUser = await User.findByEmail(email)
-
-    if (existingUser) {
-      return res.status(400).json({
-        message: "El usuario ya existe"
+    if (!req.user) {
+      return res.status(401).json({
+        message: 'Usuario no autenticado'
       })
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    const newUser = await User.create({
-      nombre,
-      email,
-      password: hashedPassword,
-      telefono,
-      rol: normalizeIncomingRole(rol)
-    })
-
-    res.status(201).json({
-      message: "Usuario creado",
-      user: sanitizeUser(newUser)
-    })
-
-  } catch (error) {
-
-    console.error("Error en register:", error)
-
-    res.status(500).json({
-      message: "Error en registro"
-    })
-
-  }
-
-}
-
-const login = async (req, res) => {
-
-  try {
-
-    const { email, password } = req.body
-
-    const user = await User.findByEmail(email)
-
-    if (!user) {
-      return res.status(400).json({
-        message: "Usuario no encontrado"
-      })
+    const user = {
+      id: req.user.id,
+      nombre: req.user.nombre,
+      email: req.user.email,
+      telefono: req.user.telefono,
+      rol: req.user.rol
     }
 
-    const validPassword = await bcrypt.compare(password, user.password)
-
-    if (!validPassword) {
-      return res.status(400).json({
-        message: "Contraseña incorrecta"
+    if (!user.id || !user.email) {
+      return res.status(404).json({
+        message: 'Usuario no encontrado'
       })
     }
-
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        rol: toPublicRole(user.rol)
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    )
 
     res.json({
-      message: "Login exitoso",
-      token,
+      message: 'Perfil de usuario',
       user: sanitizeUser(user)
     })
-
   } catch (error) {
-
-    console.error("Error en login:", error)
+    console.error('Error en getUserProfile:', error)
 
     res.status(500).json({
-      message: "Error en login"
+      message: 'Error al obtener perfil'
     })
-
   }
-
-}
-
-const recoverPassword = async (req, res) => {
-  // No se permite restablecer una contrasena solo conociendo el email.
-  // Se requiere un token temporal y un canal de entrega verificado.
-  return res.status(503).json({
-    message: "La recuperacion de contrasena no esta disponible temporalmente"
-  })
 }
 
 module.exports = {
-  register,
-  login,
-  recoverPassword,
+  getUserProfile,
   normalizeIncomingRole,
   toPublicRole,
   sanitizeUser

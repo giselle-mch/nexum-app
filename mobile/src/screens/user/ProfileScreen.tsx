@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/authStore";
@@ -14,6 +15,8 @@ import { api } from "../../services/api";
 import { COLORS } from "../../constants/colors";
 import SectionHeader from "../../components/SectionHeader";
 import StatePanel from "../../components/StatePanel";
+import { logAppError } from "../../utils/debug";
+import BackButton from "../../components/BackButton";
 
 type ProfilePayload = {
   id: number;
@@ -45,7 +48,7 @@ export default function ProfileScreen({ navigation }: any) {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 320,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   }, []);
 
@@ -67,6 +70,7 @@ export default function ProfileScreen({ navigation }: any) {
       setProfile(user);
       setFavorites(Array.isArray(favoritesResponse) ? (favoritesResponse as FavoriteProperty[]) : []);
     } catch (error) {
+      logAppError("ProfileScreen.loadData", error);
       const msg = error instanceof Error ? error.message : "No fue posible cargar el perfil";
       setErrorMessage(msg);
       Alert.alert("Error", msg);
@@ -84,6 +88,7 @@ export default function ProfileScreen({ navigation }: any) {
       await api(`/favorites/${propertyId}`, "DELETE");
       setFavorites((prev) => prev.filter((item) => item.id !== propertyId));
     } catch (error) {
+      logAppError("ProfileScreen.onRemoveFavorite", error, { propertyId });
       Alert.alert(
         "Error",
         error instanceof Error ? error.message : "No fue posible eliminar favorito"
@@ -152,6 +157,7 @@ export default function ProfileScreen({ navigation }: any) {
             borderBottomColor: COLORS.lightGray,
           }}
         >
+          <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Map"))} />
           <SectionHeader title="Mi Perfil" subtitle="Tu información y favoritos" icon="person-circle-outline" />
           <Text style={{ marginTop: 10, color: COLORS.dark }}>Email: {profile?.email ?? "No disponible"}</Text>
           <Text style={{ marginTop: 4, color: COLORS.dark }}>Rol: {profile?.rol ?? "No disponible"}</Text>

@@ -5,6 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { api } from "../../services/api";
 import { COLORS } from "../../constants/colors";
 import { useAuthStore } from "../../store/authStore";
+import BackButton from "../../components/BackButton";
 
 type Conversation = {
   id: number;
@@ -35,7 +36,7 @@ export default function ConversationListScreen({ navigation }: any) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <View style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 14 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={{ fontSize: 22 }}>‹</Text></TouchableOpacity>
+        <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Profile"))} />
         <Text style={{ fontSize: 24, fontWeight: "800", color: COLORS.ink }}>Mensajes</Text>
       </View>
       {loading ? <ActivityIndicator color={COLORS.primary} /> : (

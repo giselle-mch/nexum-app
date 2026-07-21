@@ -4,6 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../services/api";
 import { COLORS } from "../../constants/colors";
 import { useAuthStore } from "../../store/authStore";
+import { logAppError } from "../../utils/debug";
+import BackButton from "../../components/BackButton";
 
 type Message = { id: number; sender_id: number; sender_name: string; content: string; sent_at: string };
 type Detail = { conversation: { id: number; landlord_id: number; property_title: string }; messages: Message[] };
@@ -18,7 +20,10 @@ export default function ConversationScreen({ route, navigation }: any) {
 
   const load = useCallback(async () => {
     try { setDetail((await api(`/conversations/${id}`)) as Detail); }
-    catch (error) { Alert.alert("Error", error instanceof Error ? error.message : "No fue posible cargar el chat"); }
+    catch (error) {
+      logAppError("ConversationScreen.load", error, { conversationId: id });
+      Alert.alert("Error", error instanceof Error ? error.message : "No fue posible cargar el chat");
+    }
   }, [id]);
 
   useEffect(() => {
@@ -36,6 +41,10 @@ export default function ConversationScreen({ route, navigation }: any) {
       setContent("");
       await load();
     } catch (error) {
+      logAppError("ConversationScreen.send", error, {
+        conversationId: id,
+        contentLength: text.length,
+      });
       Alert.alert("Error", error instanceof Error ? error.message : "No fue posible enviar el mensaje");
     } finally { setSending(false); }
   };
@@ -52,7 +61,7 @@ export default function ConversationScreen({ route, navigation }: any) {
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.paper }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={{ padding: 14, flexDirection: "row", gap: 14, backgroundColor: COLORS.white }}>
-          <TouchableOpacity onPress={() => navigation.goBack()}><Text style={{ fontSize: 22 }}>‹</Text></TouchableOpacity>
+          <BackButton onPress={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Conversations"))} />
           <Text numberOfLines={1} style={{ flex: 1, fontSize: 18, fontWeight: "800", color: COLORS.ink }}>{detail?.conversation.property_title ?? "Conversación"}</Text>
         </View>
         {detail?.conversation.landlord_id === user?.id ? (
